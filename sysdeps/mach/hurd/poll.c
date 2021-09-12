@@ -26,7 +26,10 @@
    FDS.  If TIMEOUT is nonzero and not -1, allow TIMEOUT milliseconds for
    an event to occur; if TIMEOUT is -1, block until an event occurs.
    Returns the number of file descriptors with events, zero if timed out,
-   or -1 for errors.  */
+   or -1 for errors.
+
+   poll实现
+   */
 
 int
 __poll (fds, nfds, timeout)

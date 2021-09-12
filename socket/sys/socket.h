@@ -94,9 +94,8 @@ typedef union { __SOCKADDR_ALLTYPES
 #endif
 
 
-/* Create a new socket of type TYPE in domain DOMAIN, using
-   protocol PROTOCOL.  If PROTOCOL is zero, one is chosen automatically.
-   Returns a file descriptor for the new socket, or -1 for errors.  */
+/* 使用协议 PROTOCOL 在域 DOMAIN 中创建类型为 TYPE 的新套接字。如果 PROTOCOL 为零，则自动选择 1。
+  返回新套接字的文件描述符，或 -1 表示错误。  */
 extern int socket (int __domain, int __type, int __protocol) __THROW;
 
 /* Create two new sockets, of type TYPE in domain DOMAIN and using

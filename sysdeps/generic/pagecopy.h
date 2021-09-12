@@ -17,26 +17,23 @@
    Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
    02111-1307 USA.  */
 
-/* This file defines the macro:
+/* 该文件定义了宏:
 
    PAGE_COPY_FWD_MAYBE (dstp, srcp, nbytes_left, nbytes)
 
-   which is invoked like WORD_COPY_FWD et al.  The pointers should be at
-   least word aligned.  This will check if virtual copying by pages can and
-   should be done and do it if so.
+	它的调用方式类似于 WORD_COPY_FWD 等。指针至少应该是字对齐的。
+	这将检查按页进行虚拟复制是否可以并且应该完成，如果可以，则执行此操作。
 
-   System-specific pagecopy.h files should define these macros and then
-   #include this file:
+  系统特定的 pagecopy.h 文件应定义这些宏，然后包含此文件：
 
    PAGE_COPY_THRESHOLD
-   -- Minimum size for which virtual copying by pages is worthwhile.
+   -- 值得按页进行虚拟复制的最小大小。
 
    PAGE_SIZE
-   -- Size of a page.
+   -- 页面大小.
 
    PAGE_COPY_FWD (dstp, srcp, nbytes_left, nbytes)
-   -- Macro to perform the virtual copy operation.
-   The pointers will be aligned to PAGE_SIZE bytes.
+   -- 执行虚拟复制操作的宏。指针将与 PAGE_SIZE 字节对齐。
 */
 
 
@@ -50,13 +47,12 @@
       if ((nbytes) >= PAGE_COPY_THRESHOLD &&				      \
 	  PAGE_OFFSET ((dstp) - (srcp)) == 0) 				      \
 	{								      \
-	  /* The amount to copy is past the threshold for copying	      \
-	     pages virtually with kernel VM operations, and the		      \
-	     source and destination addresses have the same alignment.  */    \
+	  /* 复制的数量超过了使用内核 VM 操作虚拟复制页的阈值，
+ 		* 并且源地址和目标地址具有相同的对齐方式。  */    \
 	  size_t nbytes_before = PAGE_OFFSET (-(dstp));			      \
 	  if (nbytes_before != 0)					      \
 	    {								      \
-	      /* First copy the words before the first page boundary.  */     \
+	      /* 首先复制第一页边界之前的单词。  */     \
 	      WORD_COPY_FWD (dstp, srcp, nbytes_left, nbytes_before);	      \
 	      assert (nbytes_left == 0);				      \
 	      nbytes -= nbytes_before;					      \
@@ -65,7 +61,7 @@
 	}								      \
     } while (0)
 
-/* The page size is always a power of two, so we can avoid modulo division.  */
+/* 页大小始终是 2 的幂，因此我们可以避免模除。  */
 #define PAGE_OFFSET(n)	((n) & (PAGE_SIZE - 1))
 
 #else

@@ -56,8 +56,7 @@
 
 #else	/* ! GNU CC */
 
-/* We don't use `memset' because this would require a prototype and
-   the array isn't too big.  */
+/* 我们不使用“memset”，因为这需要一个原型，而且数组不会太大。  */
 # define __FD_ZERO(set)  \
   do {									      \
     unsigned int __i;							      \

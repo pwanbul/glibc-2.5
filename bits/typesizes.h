@@ -59,7 +59,7 @@
 #define __FSID_T_TYPE		struct { int __val[2]; }
 #define __SSIZE_T_TYPE		__SWORD_TYPE
 
-/* Number of descriptors that can fit in an `fd_set'.  */
+/* 可以放入`fd_set' 的描述符数量。  */
 #define	__FD_SETSIZE		1024
 
 

@@ -34,31 +34,30 @@ memcpy (dstpp, srcpp, len)
   unsigned long int dstp = (long int) dstpp;
   unsigned long int srcp = (long int) srcpp;
 
-  /* Copy from the beginning to the end.  */
+  /* 从头复制到尾。  */
 
-  /* If there not too few bytes to copy, use word copy.  */
-  if (len >= OP_T_THRES)
+  /* 如果要复制的字节不是太少，请使用字复制。  */
+  if (len >= OP_T_THRES)		// OP_T_THRES为16
     {
-      /* Copy just a few bytes to make DSTP aligned.  */
-      len -= (-dstp) % OPSIZ;
-      BYTE_COPY_FWD (dstp, srcp, (-dstp) % OPSIZ);
+      /* 仅复制几个字节以使 DSTP 对齐. */
+      len -= (-dstp) % OPSIZ;		// OPSIZ为8
+      BYTE_COPY_FWD (dstp, srcp, (-dstp) % OPSIZ);			// 按字节拷贝
 
-      /* Copy whole pages from SRCP to DSTP by virtual address manipulation,
-	 as much as possible.  */
+      /* 尽可能通过虚拟地址操作将整个页面从SRCP复制到DSTP。*/
 
-      PAGE_COPY_FWD_MAYBE (dstp, srcp, len, len);
+      PAGE_COPY_FWD_MAYBE (dstp, srcp, len, len);		// 按虚拟内存页拷贝，i386不支持
 
-      /* Copy from SRCP to DSTP taking advantage of the known alignment of
-	 DSTP.  Number of bytes remaining is put in the third argument,
-	 i.e. in LEN.  This number may vary from machine to machine.  */
+      /* 利用已知的 DSTP 对齐方式从 SRCP 复制到 DSTP。
+       * 剩余的字节数放在第三个参数中，即在 LEN 中。这个数字可能因机器而异。
+       * */
 
-      WORD_COPY_FWD (dstp, srcp, len, len);
+      WORD_COPY_FWD (dstp, srcp, len, len);		// 按字拷贝
 
-      /* Fall out and copy the tail.  */
+      /* 掉出来复制尾巴.  */
     }
 
-  /* There are just a few bytes to copy.  Use byte memory operations.  */
-  BYTE_COPY_FWD (dstp, srcp, len);
+  /* 只需复制几个字节。使用字节内存操作。  */
+  BYTE_COPY_FWD (dstp, srcp, len);		// 按字节拷贝
 
   return dstpp;
 }

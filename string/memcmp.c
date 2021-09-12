@@ -50,13 +50,13 @@
 
 # include <sys/types.h>
 
-/* Type to use for aligned memory operations.
-   This should normally be the biggest type supported by a single load
-   and store.  Must be an unsigned type.  */
+/* 用于对齐内存操作的类型。
+   这通常应该是单个加载和存储支持的最大类型。
+   必须是无符号类型。  */
 # define op_t	unsigned long int
 # define OPSIZ	(sizeof(op_t))
 
-/* Threshold value for when to enter the unrolled loops.  */
+/* 何时进入展开循环的阈值。  */
 # define OP_T_THRES	16
 
 /* Type to use for unaligned operations.  */

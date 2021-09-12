@@ -30,10 +30,10 @@
 #include <tls.h>
 
 
-/* For Linux we can use the system call table in the header file
+/* 对于Linux，我们可以使用头文件中的系统调用表
 	/usr/include/asm/unistd.h
-   of the kernel.  But these symbols do not follow the SYS_* syntax
-   so we have to redefine the `SYS_ify' macro here.  */
+	的内核。但是这些符号不遵循 SYS_ 语法，因此我们必须在此处重新定义“SYS_ify”宏。
+ */
 #undef SYS_ify
 #define SYS_ify(syscall_name)	__NR_##syscall_name
 
@@ -336,26 +336,26 @@ asm (".L__X'%ebx = 1\n\t"
      ".endif\n\t"
      ".endm\n\t");
 
-/* Define a macro which expands inline into the wrapper code for a system
-   call.  */
+/* 定义一个宏，该宏将内联扩展到系统调用的包装器代码中。  */
 #undef INLINE_SYSCALL
 #define INLINE_SYSCALL(name, nr, args...) \
   ({									      \
-    unsigned int resultvar = INTERNAL_SYSCALL (name, , nr, args);	      \
+    unsigned int resultvar = INTERNAL_SYSCALL (name, , nr, args); \
+    // 检查是否越界
     if (__builtin_expect (INTERNAL_SYSCALL_ERROR_P (resultvar, ), 0))	      \
       {									      \
-	__set_errno (INTERNAL_SYSCALL_ERRNO (resultvar, ));		      \
-	resultvar = 0xffffffff;						      \
+	        __set_errno (INTERNAL_SYSCALL_ERRNO (resultvar, ));		      \
+	        resultvar = 0xffffffff;						      \
       }									      \
-    (int) resultvar; })
+    (int) resultvar;
+  })
 
-/* Define a macro which expands inline into the wrapper code for a system
-   call.  This use is for internal calls that do not need to handle errors
-   normally.  It will never touch errno.  This returns just what the kernel
-   gave back.
-
-   The _NCS variant allows non-constant syscall numbers but it is not
-   possible to use more than four parameters.  */
+/* 定义一个宏，该宏将内联扩展到系统调用的包装器代码中。
+ * 这种用途是用于不需要正常处理错误的内部调用。
+ * 它永远不会触及 errno。这将返回内核返回的内容。
+ *
+ * _NCS 变体允许非常量的系统调用号，但不能使用四个以上的参数。
+*/
 #undef INTERNAL_SYSCALL
 #ifdef I386_USE_SYSENTER
 # ifdef SHARED
@@ -410,18 +410,21 @@ asm (".L__X'%ebx = 1\n\t"
     (int) resultvar; })
 # endif
 #else
-# define INTERNAL_SYSCALL(name, err, nr, args...) \
+#define INTERNAL_SYSCALL(name, err, nr, args...) \
   ({									      \
     register unsigned int resultvar;					      \
     EXTRAVAR_##nr							      \
     asm volatile (							      \
-    LOADARGS_##nr							      \
-    "movl %1, %%eax\n\t"						      \
-    "int $0x80\n\t"							      \
-    RESTOREARGS_##nr							      \
-    : "=a" (resultvar)							      \
-    : "i" (__NR_##name) ASMFMT_##nr(args) : "memory", "cc");		      \
-    (int) resultvar; })
+        LOADARGS_##nr							      \
+        "movl %1, %%eax\n\t"						      \
+        "int $0x80\n\t"							      \
+        RESTOREARGS_##nr							      \
+        : "=a" (resultvar)							      \
+        : "i" (__NR_##name) ASMFMT_##nr(args)    \
+        : "memory", "cc"  \
+    );  \
+    (int) resultvar;                             \
+  })
 # define INTERNAL_SYSCALL_NCS(name, err, nr, args...) \
   ({									      \
     register unsigned int resultvar;					      \
@@ -438,6 +441,7 @@ asm (".L__X'%ebx = 1\n\t"
 #undef INTERNAL_SYSCALL_DECL
 #define INTERNAL_SYSCALL_DECL(err) do { } while (0)
 
+// 检查是否越界，内核地址空间中最后一个页框用来捕获错误码
 #undef INTERNAL_SYSCALL_ERROR_P
 #define INTERNAL_SYSCALL_ERROR_P(val, err) \
   ((unsigned int) (val) >= 0xfffff001u)

@@ -51,28 +51,31 @@ typedef __suseconds_t suseconds_t;
 #endif
 
 
-/* The fd_set member is required to be an array of longs.  */
+/* fd_set 成员必须是一个 long 数组。  */
 typedef long int __fd_mask;
 
 /* Some versions of <linux/posix_types.h> define these macros.  */
 #undef	__NFDBITS
 #undef	__FDELT
 #undef	__FDMASK
-/* It's easier to assume 8-bit bytes than to get CHAR_BIT.  */
-#define __NFDBITS	(8 * sizeof (__fd_mask))
+/* 假设 8 位字节比获取 CHAR_BIT 更容易.  */
+#define __NFDBITS	(8 * sizeof (long))
 #define	__FDELT(d)	((d) / __NFDBITS)
 #define	__FDMASK(d)	((__fd_mask) 1 << ((d) % __NFDBITS))
 
-/* fd_set for select and pselect.  */
+/* fd_set for select and pselect.
+ * fd_set是一个数组
+ * long fds_bits[32]
+ * */
 typedef struct
   {
     /* XPG4.2 requires this member name.  Otherwise avoid the name
        from the global namespace.  */
 #ifdef __USE_XOPEN
-    __fd_mask fds_bits[__FD_SETSIZE / __NFDBITS];
+    long fds_bits[__FD_SETSIZE / __NFDBITS];
 # define __FDS_BITS(set) ((set)->fds_bits)
 #else
-    __fd_mask __fds_bits[__FD_SETSIZE / __NFDBITS];
+    long __fds_bits[__FD_SETSIZE / __NFDBITS];
 # define __FDS_BITS(set) ((set)->__fds_bits)
 #endif
   } fd_set;

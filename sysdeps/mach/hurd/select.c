@@ -25,7 +25,10 @@
    readiness, in WRITEFDS (if not NULL) for write readiness, and in EXCEPTFDS
    (if not NULL) for exceptional conditions.  If TIMEOUT is not NULL, time out
    after waiting the interval specified therein.  Returns the number of ready
-   descriptors, or -1 for errors.  */
+   descriptors, or -1 for errors.
+
+   select实现
+   */
 int
 __select (nfds, readfds, writefds, exceptfds, timeout)
      int nfds;

@@ -27,7 +27,7 @@
 #define BYTE_COPY_FWD(dst_bp, src_bp, nbytes)				      \
   do {									      \
     int __d0;								      \
-    asm volatile(/* Clear the direction flag, so copying goes forward.  */    \
+    asm volatile(/* 清除方向标志，因此复制继续。  */    \
 		 "cld\n"						      \
 		 /* Copy bytes.  */					      \
 		 "rep\n"						      \
@@ -61,7 +61,7 @@
   do									      \
     {									      \
       int __d0;								      \
-      asm volatile(/* Clear the direction flag, so copying goes forward.  */  \
+      asm volatile(/* 清除方向标志，因此复制继续。  */  \
 		   "cld\n"						      \
 		   /* Copy longwords.  */				      \
 		   "rep\n"						      \

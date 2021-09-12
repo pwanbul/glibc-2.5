@@ -21,11 +21,10 @@
 
 #define _SYS_SOCKETCALL_H	1
 
-/* Define unique numbers for the operations permitted on socket.  Linux
-   uses a single system call for all these functions.  The relevant code
-   file is /usr/include/linux/net.h.
-   We cannot use a enum here because the values are used in assembler
-   code.  */
+/* 为套接字上允许的操作定义唯一编号。 Linux 对所有这些功能使用单个系统调用。
+ * 相关的代码文件是usr/include/linux/net.h。
+   我们不能在这里使用枚举，因为这些值是在汇编代码中使用的。
+   */
 
 #define SOCKOP_socket		1
 #define SOCKOP_bind		2

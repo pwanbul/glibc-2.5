@@ -24,13 +24,11 @@
 #define P2(a, b) a##b
 
 	.text
-/* The socket-oriented system calls are handled unusally in Linux.
-   They are all gated through the single `socketcall' system call number.
-   `socketcall' takes two arguments: the first is the subcode, specifying
-   which socket function is being called; and the second is a pointer to
-   the arguments to the specific function.
+/* 面向套接字的系统调用在 Linux 中处理异常。
+   它们都通过单个“socketcall”系统调用号进行门控。
+   `socketcall' 有两个参数：第一个是子代码，指定正在调用哪个套接字函数；第二个是指向特定函数的参数的指针。
 
-   The .S files for the other calls just #define socket and #include this.  */
+   其他调用的 .S 文件只定义套接字并包含它。  */
 
 #ifndef __socket
 # ifndef NO_WEAK_ALIAS
@@ -40,6 +38,7 @@
 # endif
 #endif
 
+// 看这个就明白了      https://wenku.baidu.com/view/5948b9acc1c708a1284a44af.html
 .globl __socket
 ENTRY (__socket)
 #if defined NEED_CANCELLATION && defined CENABLE
@@ -51,11 +50,11 @@ ENTRY (__socket)
 	movl %ebx, %edx
 	cfi_register (3, 2)
 
-	movl $SYS_ify(socketcall), %eax	/* System call number in %eax.  */
+	movl $SYS_ify(socketcall), %eax	/* 系统调用号保存在%eax.  */
 
 	/* Use ## so `socket' is a separate token that might be #define'd.  */
-	movl $P(SOCKOP_,socket), %ebx	/* Subcode is first arg to syscall.  */
-	lea 4(%esp), %ecx		/* Address of args is 2nd arg.  */
+	movl $P(SOCKOP_,socket), %ebx	/* 子调用号是系统调用的第一个参数。  */
+	lea 4(%esp), %ecx		/* args的地址是第二个参数  */
 
         /* Do the system call trap.  */
 	ENTER_KERNEL
