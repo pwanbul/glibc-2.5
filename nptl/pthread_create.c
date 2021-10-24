@@ -427,21 +427,18 @@ __pthread_create_2_1 (newthread, attr, start_routine, arg)
 
   const struct pthread_attr *iattr = (struct pthread_attr *) attr;
   if (iattr == NULL)
-    /* Is this the best idea?  On NUMA machines this could mean
-       accessing far-away memory.  */
+    /* 这是最好的主意吗？在 NUMA 机器上，这可能意味着访问远处的内存。  */
     iattr = &default_attr;
 
   struct pthread *pd = NULL;
   int err = ALLOCATE_STACK (iattr, &pd);
   if (__builtin_expect (err != 0, 0))
-    /* Something went wrong.  Maybe a parameter of the attributes is
-       invalid or we could not allocate memory.  */
+    /* 出了些问题。也许属性的参数无效或我们无法分配内存。  */
     return err;
 
 
-  /* Initialize the TCB.  All initializations with zero should be
-     performed in 'get_cached_stack'.  This way we avoid doing this if
-     the stack freshly allocated with 'mmap'.  */
+  /* 初始化 TCB。所有零初始化都应在“get_cached_stack”中执行。
+   * 这样，如果堆栈新分配了“mmap”，我们就可以避免这样做。  */
 
 #ifdef TLS_TCB_AT_TP
   /* Reference to the TCB itself.  */
@@ -451,9 +448,9 @@ __pthread_create_2_1 (newthread, attr, start_routine, arg)
   pd->header.tcb = pd;
 #endif
 
-  /* Store the address of the start routine and the parameter.  Since
-     we do not start the function directly the stillborn thread will
-     get the information from its thread descriptor.  */
+  /* 存储启动例程的地址和参数。
+   * 由于我们不直接启动函数，死线程将从其线程描述符中获取信息。
+   * */
   pd->start_routine = start_routine;
   pd->arg = arg;
 
@@ -462,31 +459,31 @@ __pthread_create_2_1 (newthread, attr, start_routine, arg)
   pd->flags = ((iattr->flags & ~(ATTR_FLAG_SCHED_SET | ATTR_FLAG_POLICY_SET))
 	       | (self->flags & (ATTR_FLAG_SCHED_SET | ATTR_FLAG_POLICY_SET)));
 
-  /* Initialize the field for the ID of the thread which is waiting
-     for us.  This is a self-reference in case the thread is created
-     detached.  */
+  /* 初始化正在等待我们的线程的 ID 字段。
+   * 这是一个自引用，以防线程被分离创建。
+   * */
   pd->joinid = iattr->flags & ATTR_FLAG_DETACHSTATE ? pd : NULL;
 
-  /* The debug events are inherited from the parent.  */
+  /* 调试事件是从父级继承的。  */
   pd->eventbuf = self->eventbuf;
 
 
-  /* Copy the parent's scheduling parameters.  The flags will say what
-     is valid and what is not.  */
+  /* 复制父级的调度参数。标志将说明什么是有效的，什么是无效的。
+   * */
   pd->schedpolicy = self->schedpolicy;
   pd->schedparam = self->schedparam;
 
-  /* Copy the stack guard canary.  */
+  /* 复制堆栈保护金丝雀。  */
 #ifdef THREAD_COPY_STACK_GUARD
   THREAD_COPY_STACK_GUARD (pd);
 #endif
 
-  /* Copy the pointer guard value.  */
+  /*复制指针保护值。  */
 #ifdef THREAD_COPY_POINTER_GUARD
   THREAD_COPY_POINTER_GUARD (pd);
 #endif
 
-  /* Determine scheduling parameters for the thread.  */
+  /* 确定线程的调度参数。  */
   if (attr != NULL
       && __builtin_expect ((iattr->flags & ATTR_FLAG_NOTINHERITSCHED) != 0, 0)
       && (iattr->flags & (ATTR_FLAG_SCHED_SET | ATTR_FLAG_POLICY_SET)) != 0)
@@ -524,12 +521,10 @@ __pthread_create_2_1 (newthread, attr, start_routine, arg)
 	}
     }
 
-  /* Pass the descriptor to the caller.  */
+  /* 将描述符传递给调用者。  */
   *newthread = (pthread_t) pd;
 
-  /* Remember whether the thread is detached or not.  In case of an
-     error we have to free the stacks of non-detached stillborn
-     threads.  */
+  /* 记住线程是否分离。如果出现错误，我们必须释放未分离的死线程堆栈。*/
   bool is_detached = IS_DETACHED (pd);
 
   /* Start the thread.  */

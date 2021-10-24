@@ -365,10 +365,10 @@ extern "C" {
 */
 
 #ifndef INTERNAL_SIZE_T
-#define INTERNAL_SIZE_T size_t
+#define INTERNAL_SIZE_T size_t      // 4字节
 #endif
 
-/* The corresponding word size */
+/* 对应的字长 4字节*/
 #define SIZE_SZ                (sizeof(INTERNAL_SIZE_T))
 
 
@@ -391,11 +391,11 @@ extern "C" {
 #define MALLOC_ALIGNMENT       (2 * SIZE_SZ < __alignof__ (long double) \
 				? __alignof__ (long double) : 2 * SIZE_SZ)
 */
-#define MALLOC_ALIGNMENT       (2 * SIZE_SZ)
+#define MALLOC_ALIGNMENT       (2 * SIZE_SZ)        // 8字节
 #endif
 
-/* The corresponding bit mask value */
-#define MALLOC_ALIGN_MASK      (MALLOC_ALIGNMENT - 1)
+/* 对应的位掩码值 */
+#define MALLOC_ALIGN_MASK      (MALLOC_ALIGNMENT - 1)       // 0000 0111
 
 
 
@@ -1312,7 +1312,7 @@ int      __posix_memalign(void **, size_t, size_t);
 #endif
 
 #ifndef DEFAULT_MXFAST
-#define DEFAULT_MXFAST     64
+#define DEFAULT_MXFAST     64       // fastbin管理最大64字节，此时尽管fastbin有10个头结点，但只有前7个生效
 #endif
 
 
@@ -1769,17 +1769,18 @@ static int dev_zero_fd = -1; /* Cached file descriptor for /dev/zero. */
 
 
 /*
-  This struct declaration is misleading (but accurate and necessary).
-  It declares a "view" into memory allowing access to necessary
-  fields at known offsets from a given base. See explanation below.
+  此结构声明具有误导性（但准确且必要）。
+  它在内存中声明了一个“视图”，允许访问距给定基数的已知偏移量处的必要字段。
+  请参阅下面的说明。
+  sizeof(struct malloc_chunk) 为16字节
 */
 
 struct malloc_chunk {
 
-  INTERNAL_SIZE_T      prev_size;  /* Size of previous chunk (if free).  */
-  INTERNAL_SIZE_T      size;       /* Size in bytes, including overhead. */
+  INTERNAL_SIZE_T      prev_size;  /* 前一个块的大小（如果前一个块是空闲的） */
+  INTERNAL_SIZE_T      size;       /* 以字节为单位的大小，包括开销 */
 
-  struct malloc_chunk* fd;         /* double links -- used only if free. */
+  struct malloc_chunk* fd;         /* 双向链表——仅在空闲时使用 */
   struct malloc_chunk* bk;
 };
 
@@ -1787,22 +1788,19 @@ struct malloc_chunk {
 /*
    malloc_chunk details:
 
-    (The following includes lightly edited explanations by Colin Plumb.)
+   （以下内容包括 Colin Plumb 稍作编辑的解释。）
 
-    Chunks of memory are maintained using a `boundary tag' method as
-    described in e.g., Knuth or Standish.  (See the paper by Paul
-    Wilson ftp://ftp.cs.utexas.edu/pub/garbage/allocsrv.ps for a
-    survey of such techniques.)  Sizes of free chunks are stored both
-    in the front of each chunk and at the end.  This makes
-    consolidating fragmented chunks into bigger chunks very fast.  The
-    size fields also hold bits representing whether chunks are free or
-    in use.
+    内存块使用“边界标签”方法维护，如 Knuth 或 Standish 中所述。
+    （有关此类技术的调查，请参阅 Paul Wilson ftp 的
+    论文：ftp.cs.utexas.edupubgarbageallocsrv.ps。）
+    空闲块的大小存储在每个块的前面和结尾。 这使得可以非常快速地将碎片化的块合并为更大的块。
+    大小字段还包含表示块是空闲还是正在使用的位。
 
-    An allocated chunk looks like this:
+    分配的块看起来像这样：
 
 
     chunk-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-            |             Size of previous chunk, if allocated            | |
+            |             Size of previous chunk, if allocated（当前块）    | |
             +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
             |             Size of chunk, in bytes                       |M|P|
       mem-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -1815,15 +1813,12 @@ nextchunk-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
             +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 
-    Where "chunk" is the front of the chunk for the purpose of most of
-    the malloc code, but "mem" is the pointer that is returned to the
-    user.  "Nextchunk" is the beginning of the next contiguous chunk.
+    对于大多数malloc代码而言，其中“chunk”是块的前面，而“mem”是返回给用户的指针。
+   “Nextchunk”是下一个连续块的开始。
 
-    Chunks always begin on even word boundries, so the mem portion
-    (which is returned to the user) is also on an even word boundary, and
-    thus at least double-word aligned.
+    块总是在偶数字边界上开始，因此 mem 部分（返回给用户）也在偶数字边界上，因此至少是双字对齐的。
 
-    Free chunks are stored in circular doubly-linked lists, and look like this:
+    空闲块存储在循环双向链表中，如下所示：
 
     chunk-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
             |             Size of previous chunk                            |
@@ -1841,33 +1836,23 @@ nextchunk-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     `foot:' |             Size of chunk, in bytes                           |
             +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-    The P (PREV_INUSE) bit, stored in the unused low-order bit of the
-    chunk size (which is always a multiple of two words), is an in-use
-    bit for the *previous* chunk.  If that bit is *clear*, then the
-    word before the current chunk size contains the previous chunk
-    size, and can be used to find the front of the previous chunk.
-    The very first chunk allocated always has this bit set,
-    preventing access to non-existent (or non-owned) memory. If
-    prev_inuse is set for any given chunk, then you CANNOT determine
-    the size of the previous chunk, and might even get a memory
-    addressing fault when trying to do so.
+    P (PREV_INUSE) 位存储在块大小的未使用低位（始终是两个字的倍数）中，
+    是前一个块的使用位。 如果该位清零，则当前块大小之前的字包含前一个块大小，
+    可用于查找前一个块的前面。
+    分配的第一个块总是设置这个位，防止访问不存在（或非拥有）的内存。
+    如果为任何给定块设置了 prev_inuse，则您无法确定前一个块的大小，
+    甚至在尝试这样做时可能会遇到内存寻址错误。
 
-    Note that the `foot' of the current chunk is actually represented
-    as the prev_size of the NEXT chunk. This makes it easier to
-    deal with alignments etc but can be very confusing when trying
-    to extend or adapt this code.
+    请注意，当前块的“脚”实际上表示为 NEXT 块的 prev_size。
+    这使得处理对齐等更容易，但在尝试扩展或调整此代码时可能会非常混乱。
 
-    The two exceptions to all this are
+    所有这一切的两个例外是
 
-     1. The special chunk `top' doesn't bother using the
-        trailing size field since there is no next contiguous chunk
-        that would have to index off it. After initialization, `top'
-        is forced to always exist.  If it would become less than
-        MINSIZE bytes long, it is replenished.
+     1. 特殊的块“top”不需要使用尾随大小字段，因为没有下一个必须对其进行索引的连续块.
+        初始化后，`top' 被强制一直存在。如果它将变得小于 MINSIZE 字节长，则对其进行补充。
 
-     2. Chunks allocated via mmap, which have the second-lowest-order
-        bit M (IS_MMAPPED) set in their size fields.  Because they are
-        allocated one-by-one, each must contain its own trailing size field.
+     2. 通过 mmap 分配的块，在其大小字段中设置了第二低位 M (IS_MMAPPED)。
+        因为它们是一一分配的，所以每个都必须包含自己的尾随大小字段.
 
 */
 
@@ -1880,10 +1865,10 @@ nextchunk-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 #define chunk2mem(p)   ((Void_t*)((char*)(p) + 2*SIZE_SZ))
 #define mem2chunk(mem) ((mchunkptr)((char*)(mem) - 2*SIZE_SZ))
 
-/* The smallest possible chunk */
+/* 最小可能的块，16字节 */
 #define MIN_CHUNK_SIZE        (sizeof(struct malloc_chunk))
 
-/* The smallest size we can malloc is an aligned minimal chunk */
+/* 我们可以 malloc 的最小大小是对齐的最小块 16字节*/
 
 #define MINSIZE  \
   (unsigned long)(((MIN_CHUNK_SIZE+MALLOC_ALIGN_MASK) & ~MALLOC_ALIGN_MASK))
@@ -1898,9 +1883,10 @@ nextchunk-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 
 /*
-   Check if a request is so large that it would wrap around zero when
-   padded and aligned. To simplify some other code, the bound is made
-   low enough so that adding MINSIZE will also not wrap around zero.
+   检查请求是否大到在填充和对齐时会环绕零.
+   为了简化其他一些代码，将边界设置得足够低，这样添加 MINSIZE 也不会环绕零。
+
+
 */
 
 #define REQUEST_OUT_OF_RANGE(req)                                 \
@@ -1917,6 +1903,7 @@ nextchunk-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 /*  Same, except also perform argument check */
 
 #define checked_request2size(req, sz)                             \
+  /* 检查是否越界 */                                                \
   if (REQUEST_OUT_OF_RANGE(req)) {                                \
     MALLOC_FAILURE_ACTION;                                        \
     return 0;                                                     \
@@ -1961,7 +1948,7 @@ nextchunk-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 */
 #define SIZE_BITS (PREV_INUSE|IS_MMAPPED|NON_MAIN_ARENA)
 
-/* Get size, ignoring use bits */
+/* 获取大小，忽略使用位 */
 #define chunksize(p)         ((p)->size & ~(SIZE_BITS))
 
 
@@ -1990,6 +1977,7 @@ nextchunk-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 #define inuse_bit_at_offset(p, s)\
  (((mchunkptr)(((char*)(p)) + (s)))->size & PREV_INUSE)
 
+/* 设置相邻chunk中的P标记 */
 #define set_inuse_bit_at_offset(p, s)\
  (((mchunkptr)(((char*)(p)) + (s)))->size |= PREV_INUSE)
 
@@ -2010,9 +1998,8 @@ nextchunk-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 /*
   -------------------- Internal data structures --------------------
 
-   All internal state is held in an instance of malloc_state defined
-   below. There are no other static variables, except in two optional
-   cases:
+   所有内部状态都保存在下面定义的 malloc_state 实例中。
+   除了两种可选情况外，没有其他静态变量：
    * If USE_MALLOC_LOCK is defined, the mALLOC_MUTEx declared above.
    * If HAVE_MMAP is true, but mmap doesn't support
      MAP_ANONYMOUS, a dummy file descriptor for mmap.
@@ -2025,24 +2012,16 @@ nextchunk-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 /*
   Bins
 
-    An array of bin headers for free chunks. Each bin is doubly
-    linked.  The bins are approximately proportionally (log) spaced.
-    There are a lot of these bins (128). This may look excessive, but
-    works very well in practice.  Most bins hold sizes that are
-    unusual as malloc request sizes, but are more usual for fragments
-    and consolidated sets of chunks, which is what these bins hold, so
-    they can be found quickly.  All procedures maintain the invariant
-    that no consolidated chunk physically borders another one, so each
-    chunk in a list is known to be preceeded and followed by either
-    inuse chunks or the ends of memory.
+    用于空闲块的 bin 标头数组。每个 bin 都是双向链接的。
+    bin 大约按比例 (log) 间隔。
+    有很多这样的bin（128）。这可能看起来有些过分，但在实践中效果很好。
+    大多数 bin 保存的大小与 malloc 请求大小不同，但更常见于片段和合并的块集，
+    这是这些 bin 保存的内容，因此可以快速找到它们。 所有过程都保持不变，
+    即没有合并的块在物理上与另一个块相邻，因此已知列表中的每个块之前和之后是使用中的块或内存的结尾。
 
-    Chunks in bins are kept in size order, with ties going to the
-    approximately least recently used chunk. Ordering isn't needed
-    for the small bins, which all contain the same-sized chunks, but
-    facilitates best-fit allocation for larger chunks. These lists
-    are just sequential. Keeping them in order almost never requires
-    enough traversal to warrant using fancier ordered data
-    structures.
+   bin 中的块按大小顺序保存，关系与最近最少使用的块有关。 small bin 不需要排序，
+   它们都包含相同大小的块，但有助于为较大的块进行最佳分配。 这些列表只是顺序的。
+   保持它们有序几乎不需要足够的遍历来保证使用更高级的有序数据结构。
 
     Chunks of the same size are linked with the most
     recently freed at the front, and allocations are taken from the
@@ -2060,7 +2039,7 @@ nextchunk-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 typedef struct malloc_chunk* mbinptr;
 
-/* addressing -- note that bin_at(0) does not exist */
+/* addressing -- 注意 bin_at(0) 不存在 */
 #define bin_at(m, i) \
   (mbinptr) (((char *) &((m)->bins[((i) - 1) * 2]))			      \
 	     - offsetof (struct malloc_chunk, fd))
@@ -2110,9 +2089,11 @@ typedef struct malloc_chunk* mbinptr;
 #define SMALLBIN_WIDTH      8
 #define MIN_LARGE_SIZE    512
 
+// smallbin管理的最大chunk为504字节
 #define in_smallbin_range(sz)  \
   ((unsigned long)(sz) < (unsigned long)MIN_LARGE_SIZE)
 
+// 除以8即可转换成idx
 #define smallbin_index(sz)     (((unsigned)(sz)) >> 3)
 
 #define largebin_index(sz)                                                   \
@@ -2141,7 +2122,7 @@ typedef struct malloc_chunk* mbinptr;
     does not have to be taken into account in size comparisons.
 */
 
-/* The otherwise unindexable 1-bin is used to hold unsorted chunks. */
+/* 否则无法索引的 1-bin 用于保存未排序的块. */
 #define unsorted_chunks(M)          (bin_at(M, 1))
 
 /*
@@ -2162,7 +2143,7 @@ typedef struct malloc_chunk* mbinptr;
     the 2 preceding words to be zero during this interval as well.)
 */
 
-/* Conveniently, the unsorted bin can be used as dummy top on first call */
+/* 方便的是，未分类的bin可以在第一次调用时用作虚拟顶部 */
 #define initial_top(M)              (unsorted_chunks(M))
 
 /*
@@ -2191,28 +2172,24 @@ typedef struct malloc_chunk* mbinptr;
 /*
   Fastbins
 
-    An array of lists holding recently freed small chunks.  Fastbins
-    are not doubly linked.  It is faster to single-link them, and
-    since chunks are never removed from the middles of these lists,
-    double linking is not necessary. Also, unlike regular bins, they
-    are not even processed in FIFO order (they use faster LIFO) since
-    ordering doesn't much matter in the transient contexts in which
-    fastbins are normally used.
+    包含最近释放的小块的列表数组。 Fastbins 不是双重链接的。
+    单链接它们更快，并且由于块永远不会从这些列表的中间删除，
+    因此不需要双链接。 此外，与常规 bins 不同，它们甚至不按 FIFO 顺序处理
+    （它们使用更快的 LIFO），因为在通常使用 fastbins 的瞬态上下文中，排序并不重要。
 
-    Chunks in fastbins keep their inuse bit set, so they cannot
-    be consolidated with other free chunks. malloc_consolidate
-    releases all chunks in fastbins and consolidates them with
-    other free chunks.
+   fastbins 中的块保持其 inuse 位设置，因此它们不能与其他空闲块合并。
+   malloc_consolidate 释放 fastbins 中的所有块，并将它们与其他空闲块合并。
 */
 
 typedef struct malloc_chunk* mfastbinptr;
 
-/* offset 2 to use otherwise unindexable first 2 bins */
+/* sz从16起步，即sz为16的chunk放在下标为0的位置 */
 #define fastbin_index(sz)        ((((unsigned int)(sz)) >> 3) - 2)
 
 /* The maximum fastbin request size we support */
 #define MAX_FAST_SIZE     80
 
+// NFASTBINS为10，80向上对齐到96，然后97/8-2等于10
 #define NFASTBINS  (fastbin_index(request2size(MAX_FAST_SIZE))+1)
 
 /*
@@ -2225,7 +2202,7 @@ typedef struct malloc_chunk* mfastbinptr;
   consolidation reduces fragmentation surrounding large chunks even
   if trimming is not used.
 */
-
+// 64KB
 #define FASTBIN_CONSOLIDATION_THRESHOLD  (65536UL)
 
 /*
@@ -2234,28 +2211,25 @@ typedef struct malloc_chunk* mfastbinptr;
 */
 
 /*
-  FASTCHUNKS_BIT held in max_fast indicates that there are probably
-  some fastbin chunks. It is set true on entering a chunk into any
-  fastbin, and cleared only in malloc_consolidate.
+  保存在 max_fast 中的 FASTCHUNKS_BIT 表示可能有一些 fastbin 块。
+  它在将块输入任何 fastbin 时设置为 true，并且仅在 malloc_consolidate 中清除。
 
-  The truth value is inverted so that have_fastchunks will be true
-  upon startup (since statics are zero-filled), simplifying
-  initialization checks.
+  真值被反转，以便 has_fastchunks 在启动时为真（因为静态是零填充的），简化了初始化检查。
+
+  标记是否存在fast chunk
 */
 
-#define FASTCHUNKS_BIT        (1U)
+#define FASTCHUNKS_BIT        (1U)      // 设置了该位，表示没有fastbin chunk
 
 #define have_fastchunks(M)     (((M)->flags &  FASTCHUNKS_BIT) == 0)
 #define clear_fastchunks(M)    ((M)->flags |=  FASTCHUNKS_BIT)
 #define set_fastchunks(M)      ((M)->flags &= ~FASTCHUNKS_BIT)
 
 /*
-  NONCONTIGUOUS_BIT indicates that MORECORE does not return contiguous
-  regions.  Otherwise, contiguity is exploited in merging together,
-  when possible, results from consecutive MORECORE calls.
+ NONCONTIGUOUS_BIT 表示 MORECORE 不返回连续区域。
+ 否则，在可能的情况下，将利用连续性将连续 MORECORE 调用的结果合并在一起。
 
-  The initial value comes from MORECORE_CONTIGUOUS, but is
-  changed dynamically if mmap is ever used as an sbrk substitute.
+ 初始值来自 MORECORE_CONTIGUOUS，但如果 mmap 曾经用作 sbrk 替代品，则会动态更改。
 */
 
 #define NONCONTIGUOUS_BIT     (2U)
@@ -2267,14 +2241,14 @@ typedef struct malloc_chunk* mfastbinptr;
 
 /*
    Set value of max_fast.
-   Use impossibly small value if 0.
-   Precondition: there are no existing fastbin chunks.
-   Setting the value clears fastchunk bit but preserves noncontiguous bit.
+   如果为 0，则使用不可能的小值。
+   前提条件：没有现有的 fastbin 块。
+   设置该值会清除 fastchunk 位但保留非连续位。
 */
 
 #define set_max_fast(s) \
   global_max_fast = ((s) == 0)? SMALLBIN_WIDTH: request2size(s)
-#define get_max_fast() global_max_fast
+#define get_max_fast() global_max_fast      // 64字节
 
 
 /*
@@ -2282,33 +2256,79 @@ typedef struct malloc_chunk* mfastbinptr;
 */
 
 struct malloc_state {
-  /* Serialize access.  */
+  /* Serialize access.
+   * Mutex 用于串行化访问分配区，当有多个线程访问同一个分配区时，第一个获得这个
+   * mutex 的线程将使用该分配区分配内存，分配完成后，释放该分配区的 mutex，以便其它线
+   * 程使用该分配区。
+   * */
   mutex_t mutex;
 
-  /* Flags (formerly in max_fast).  */
+  /* Flags (formerly in max_fast).
+   * Flags 记录了分配区的一些标志，bit0 用于标识分配区是否包含至少一个 fast bin chunk，
+   * bit1 用于标识分配区是否能返回连续的虚拟地址空间。
+   * */
   int flags;
 
 #if THREAD_STATS
-  /* Statistics for locking.  Only used if THREAD_STATS is defined.  */
+  /* 锁定统计。仅在定义 THREAD_STATS 时使用。  */
   long stat_lock_direct, stat_lock_loop, stat_lock_wait;
 #endif
+  /* 总共有136个bin，分别为：
+   * - 10个fastbins，存放在fastbins
+   * - 1个unsorted bin，存放在[1]
+   * - 62个small bins，存放在[2-63]，16字节-502字节
+   * - 63个large bins，存放在[64-126]，512字节
+   * fastbin数组：大小为10。记录的是fast bin链。
+   * bins数组：大小为129。记录的是unsorted bin（1）、small bin（2~63）、large bin链（64~126）。
+   *
+   * 注意，bins的实际的大小为254，每个两个元素看做一组，那么有127组，从1-127，其中第0组不存在
+   * */
 
-  /* Fastbins */
+  /* Fastbins
+   * fast bin链表的个数为10个，分别存放16,24,...,64,72,80,88，公差为8。
+   * 但是由get_max_fast()可知，默认情况下，fast bin实际只使用了前7个bin
+   *
+   * 不会对free chunk进行合并：鉴于设计fast bin的初衷就是进行快速的小内存分配和释放，
+   * 因此系统将属于fast bin的chunk的PREV_INUSE位总是设置为1，这样即使当fast bin中有某个chunk
+   * 同一个free chunk相邻的时候，系统也不会进行自动合并操作，而是保留两者。虽然这样做可能会造成额外的碎片化问题，但瑕不掩瑜。
+   *
+   * 每个fast bin链表都是单链表（使用fd指针）。因此，fast bin中无论是添加还是移除fast chunk，
+   * 都是对“链表尾”进行操作，而不会对某个中间的fast chunk进行操作。
+   * 单个fastbin链表中的chunk大小都是相同的，各个fastbin链表中的chunk大小是不同的。
+   * fastbinY数组中的每个bin链表的排序，是按照链表元素的大小进行排序的。
+   * 数组的第一个元素的fast bin链表中的每个chunk的大小是16字节的，
+   * 数组的第二个元素的fast bin链表中的每个chunk的大小是24字节的......
+   * 每个元素都比前面的fast bin链大8字节，以此类推进行排序。
+   * */
   mfastbinptr      fastbins[NFASTBINS];
 
-  /* Base of the topmost chunk -- not otherwise kept in a bin */
+  /* 最顶层块的底部 - 否则不会保存在 bin 中
+   * top 是一个chunk指针，指向分配区的top chunk
+   * */
   mchunkptr        top;
 
   /* The remainder from the most recent split of a small request */
   mchunkptr        last_remainder;
 
-  /* Normal bins packed as described above */
+  /* Normal bins packed as described above
+   *
+   * 概念：小于504字节的chunk称之为small chunk，small bin就是用于管理small chunk的。
+   * small bin链表的个数为62个。就内存的分配和释放速度而言，small bin比larger bin快，但比fast bin慢。
+   * 合并操作：相邻的free chunk需要进行合并操作，即合并成一个大的free chunk。具体操作见下文free(small chunk)介绍。
+   *
+   * 每个smallbin也是一个由对应free chunk组成的循环双链表。
+   * small bin采用FIFO(先入先出)算法：内存释放操作就将新释放的chunk添加到链表的front end(前端)，分配操作就从链表的rear end(尾端)中获取chunk。
+   * 单个smallbin链表中的chunk大小都是相同的，各个smallbin链表中的chunk大小是不同的，跟fastbinsY数组存储fastbin链的原理是相同的。
+   * bins数组存储small bin链时：第一个small bin链中chunk的大小为16字节，后续每个small bin中chunk的大小依次增加两个机器字长
+   * （32位相差8字节，64位相差16字节）.......以此类推，跟fastbinsY数组存储fastbin链的原理是相同的（用下图表示）。
+   *
+   * */
   mchunkptr        bins[NBINS * 2 - 2];
 
   /* Bitmap of bins */
   unsigned int     binmap[BINMAPSIZE];
 
-  /* Linked list */
+  /* 链表 多个arena通过next链接 */
   struct malloc_state *next;
 
   /* Memory allocated from the system in this arena.  */
@@ -2316,22 +2336,21 @@ struct malloc_state {
   INTERNAL_SIZE_T max_system_mem;
 };
 
+// malloc 参数管理
 struct malloc_par {
-  /* Tunable parameters */
+  /* 可调参数 */
   unsigned long    trim_threshold;
   INTERNAL_SIZE_T  top_pad;
   INTERNAL_SIZE_T  mmap_threshold;
 
-  /* Memory map support */
+  /* 内存映射支持 */
   int              n_mmaps;
   int              n_mmaps_max;
   int              max_n_mmaps;
-  /* the mmap_threshold is dynamic, until the user sets
-     it manually, at which point we need to disable any
-     dynamic behavior. */
+  /* mmap_threshold 是动态的，直到用户手动设置它，此时我们需要禁用任何动态行为。 */
   int              no_dyn_threshold;
 
-  /* Cache malloc_getpagesize */
+  /* 缓存 malloc_getpagesize */
   unsigned int     pagesize;
 
   /* Statistics */
@@ -2353,12 +2372,14 @@ struct malloc_par {
 
 static struct malloc_state main_arena;
 
-/* There is only one instance of the malloc parameters.  */
+/* malloc 参数只有一个实例
+ * 全局唯一
+ * */
 
 static struct malloc_par mp_;
 
 
-/* Maximum size of memory handled in fastbins.  */
+/* fastbins 中处理的最大内存大小。  */
 static INTERNAL_SIZE_T global_max_fast;
 
 /*
@@ -2374,16 +2395,17 @@ static INTERNAL_SIZE_T global_max_fast;
 #if __STD_C
 static void malloc_init_state(mstate av)
 #else
+// 初始化malloc_state
 static void malloc_init_state(av) mstate av;
 #endif
 {
   int     i;
   mbinptr bin;
 
-  /* Establish circular links for normal bins */
+  /* 为普通箱建立循环链接 */
   for (i = 1; i < NBINS; ++i) {
     bin = bin_at(av,i);
-    bin->fd = bin->bk = bin;
+    bin->fd = bin->bk = bin;            // 自己指向自己
   }
 
 #if MORECORE_CONTIGUOUS
@@ -2392,9 +2414,9 @@ static void malloc_init_state(av) mstate av;
     set_noncontiguous(av);
   if (av == &main_arena)
     set_max_fast(DEFAULT_MXFAST);
-  av->flags |= FASTCHUNKS_BIT;
+  av->flags |= FASTCHUNKS_BIT;      // 没有fastbin chunk
 
-  av->top            = initial_top(av);
+  av->top  = initial_top(av);       // 初始加bins中unsorted bin
 }
 
 /*
@@ -2442,7 +2464,7 @@ void weak_variable (*__malloc_initialize_hook) (void) = NULL;
 void weak_variable (*__free_hook) (__malloc_ptr_t __ptr,
 				   const __malloc_ptr_t) = NULL;
 __malloc_ptr_t weak_variable (*__malloc_hook)
-     (size_t __size, const __malloc_ptr_t) = malloc_hook_ini;
+     (size_t __size, const __malloc_ptr_t) = malloc_hook_ini;       // 将malloc_hook_ini设置为__malloc_hook的弱符号
 __malloc_ptr_t weak_variable (*__realloc_hook)
      (__malloc_ptr_t __ptr, size_t __size, const __malloc_ptr_t)
      = realloc_hook_ini;
@@ -3451,13 +3473,22 @@ mremap_chunk(p, new_size) mchunkptr p; size_t new_size;
 #endif /* HAVE_MMAP */
 
 /*------------------------ Public wrappers. --------------------------------*/
-
-Void_t*
-public_mALLOc(size_t bytes)
+/* malloc实现
+ * glibc: dlmalloc,ptmalloc2,ptmalloc3
+ * google: tcmalloc
+ * freebsd: jemalloc
+ * */
+Void_t* public_mALLOc(size_t bytes)
 {
   mstate ar_ptr;
   Void_t *victim;
 
+  /* 执行__malloc_hook
+   * 如果用户指定了malloc_hook，则执行malloc_hook,
+   * 不再执行malloc原本的处理。
+   * 
+   * 首次执行执行时，__malloc_hook被定义为malloc_hook_ini的弱符号，因此会调用malloc_hook_ini
+   * */
   __malloc_ptr_t (*hook) (size_t, __const __malloc_ptr_t) = __malloc_hook;
   if (hook != NULL)
     return (*hook)(bytes, RETURN_ADDRESS (0));
@@ -3465,7 +3496,7 @@ public_mALLOc(size_t bytes)
   arena_get(ar_ptr, bytes);
   if(!ar_ptr)
     return 0;
-  victim = _int_malloc(ar_ptr, bytes);
+  victim = _int_malloc(ar_ptr, bytes);          // malloc核心
   if(!victim) {
     /* Maybe the failure is due to running out of mmapped areas. */
     if(ar_ptr != &main_arena) {
@@ -3494,12 +3525,14 @@ public_mALLOc(size_t bytes)
 libc_hidden_def(public_mALLOc)
 #endif
 
+// 释放内存
 void
 public_fREe(Void_t* mem)
 {
   mstate ar_ptr;
   mchunkptr p;                          /* chunk corresponding to mem */
 
+  // 如果定义了__free_hook，就执行__free_hook
   void (*hook) (__malloc_ptr_t, __const __malloc_ptr_t) = __free_hook;
   if (hook != NULL) {
     (*hook)(mem, RETURN_ADDRESS (0));
@@ -3509,7 +3542,7 @@ public_fREe(Void_t* mem)
   if (mem == 0)                              /* free(0) has no effect */
     return;
 
-  p = mem2chunk(mem);
+  p = mem2chunk(mem);       // 转成chunk的地址
 
 #if HAVE_MMAP
   if (chunk_is_mmapped(p))                       /* release mmapped memory. */
@@ -3538,9 +3571,10 @@ public_fREe(Void_t* mem)
 #else
   (void)mutex_lock(&ar_ptr->mutex);
 #endif
-  _int_free(ar_ptr, mem);
+  _int_free(ar_ptr, mem);       // free核心
   (void)mutex_unlock(&ar_ptr->mutex);
 }
+
 #ifdef libc_hidden_def
 libc_hidden_def (public_fREe)
 #endif
@@ -3975,17 +4009,22 @@ public_mALLOPt(int p, int v)
 
 /*
   ------------------------------ malloc ------------------------------
-*/
+  malloc核心
+  关键的数据结构：
+    - malloc_chunk      空闲块
+    - malloc_state      内部状态
+    - malloc_heap
+ */
 
 Void_t*
 _int_malloc(mstate av, size_t bytes)
 {
-  INTERNAL_SIZE_T nb;               /* normalized request size */
-  unsigned int    idx;              /* associated bin index */
-  mbinptr         bin;              /* associated bin */
-  mfastbinptr*    fb;               /* associated fastbin */
+  INTERNAL_SIZE_T nb;               /* 标准化请求大小， 4字节 */
+  unsigned int    idx;              /* 相关的bin索引 */
+  mbinptr         bin;              /* 相关的bin */
+  mfastbinptr*    fb;               /* 相关的fastbin */
 
-  mchunkptr       victim;           /* inspected/selected chunk */
+  mchunkptr       victim;           /* 检查或选中的 chunk */
   INTERNAL_SIZE_T size;             /* its size */
   int             victim_index;     /* its bin index */
 
@@ -4000,66 +4039,70 @@ _int_malloc(mstate av, size_t bytes)
   mchunkptr       bck;              /* misc temp for linking */
 
   /*
-    Convert request size to internal form by adding SIZE_SZ bytes
-    overhead plus possibly more to obtain necessary alignment and/or
-    to obtain a size of at least MINSIZE, the smallest allocatable
-    size. Also, checked_request2size traps (returning 0) request sizes
-    that are so large that they wrap around zero when padded and
-    aligned.
+    通过添加SIZE_SZ字节开销加上可能更多的开销来将请求大小转换为内部形式，
+    以获得必要的对齐和/或获得至少MINSIZE的大小，最小的可分配大小。
+    此外，checked_request2size 陷阱（返回 0）请求大小非常大，以至于在填充和对齐时它们环绕零。
   */
 
-  checked_request2size(bytes, nb);
+  checked_request2size(bytes, nb);      // nb为实际分配的大小
 
   /*
-    If the size qualifies as a fastbin, first check corresponding bin.
-    This code is safe to execute even if av is not yet initialized, so we
-    can try it without checking, which saves some time on this fast path.
+    如果大小符合 fastbin 的条件，请先检查相应的 bin。
+   即使 av 尚未初始化，此代码也可以安全执行，因此我们可以不检查地尝试它，
+   这在此快速路径上节省了一些时间。
+
+   当我们第一次调用malloc(fast bin)的时候，系统执行_int_malloc函数，
+   该函数首先会发现当前fast bin为空，就转交给small bin处理，进而又发现small bin 也为空，
+   就调用malloc_consolidate函数对malloc_state结构体进行初始化。
+
+   malloc_consolidate函数主要完成以下几个功能：
+   a.首先判断当前malloc_state结构体中的fast bin是否为空，如果为空就说明整个malloc_state都没有完成初始化，需要对malloc_state进行初始化。
+   b.malloc_state的初始化操作由函数malloc_init_state(av)完成，该函数先初始化除fast bin之外的所有的bins，再初始化fast bins。
+
+   那么当再次执行malloc(fast chunk)函数的时候，此时fast bin相关数据不为空了，就可以使用fast bin。
+
   */
 
   if ((unsigned long)(nb) <= (unsigned long)(get_max_fast ())) {
-    long int idx = fastbin_index(nb);
-    fb = &(av->fastbins[idx]);
-    if ( (victim = *fb) != 0) {
+    long int idx = fastbin_index(nb);       // 找到对应fastbin下标
+    fb = &(av->fastbins[idx]);      // 找到对应fastbin头结点
+    if ( (victim = *fb) != 0) {     // 如果等于0，则fastbin还未初始化
       if (__builtin_expect (fastbin_index (chunksize (victim)) != idx, 0))
-	malloc_printerr (check_action, "malloc(): memory corruption (fast)",
-			 chunk2mem (victim));
-      *fb = victim->fd;
-      check_remalloced_chunk(av, victim, nb);
-      void *p = chunk2mem(victim);
+			malloc_printerr (check_action, "malloc(): memory corruption (fast)", chunk2mem (victim));
+      *fb = victim->fd;     // 找到单链表中第二个chunk，并复制给头结点
+      check_remalloced_chunk(av, victim, nb);       //debug
+      void *p = chunk2mem(victim);      // 转成mem地址
       if (__builtin_expect (perturb_byte, 0))
-	alloc_perturb (p, bytes);
-      return p;
+			alloc_perturb (p, bytes);
+      return p;     // 返回给用户
     }
   }
 
   /*
-    If a small request, check regular bin.  Since these "smallbins"
-    hold one size each, no searching within bins is necessary.
-    (For a large request, we need to wait until unsorted chunks are
-    processed to find best fit. But for small ones, fits are exact
-    anyway, so we can check now, which is faster.)
+    如果是小请求，请检查常规bin。由于这些“smallbins”每个都有一个尺寸，因此不需要在 bins 内搜索。
+   （对于大型请求，我们需要等到处理未排序的块以找到最佳匹配。但对于小请求，匹配无论如何都是精确的，因此我们现在可以检查，这样更快。）
   */
 
-  if (in_smallbin_range(nb)) {
-    idx = smallbin_index(nb);
+  if (in_smallbin_range(nb)) {      // 小于512字节，small管理的最大chunk为504字节
+    idx = smallbin_index(nb);       // 按大小找到在bins中idx
     bin = bin_at(av,idx);
 
-    if ( (victim = last(bin)) != bin) {
-      if (victim == 0) /* initialization check */
+    if ( (victim = last(bin)) != bin) {     // 如果成立，说明循环链表不为空
+      if (victim == 0) /* 初始化检查 等于0说明还未初始化 */
         malloc_consolidate(av);
-      else {
-        bck = victim->bk;
-        set_inuse_bit_at_offset(victim, nb);
+      else {        // 在smallbin中分配，从循环链表的尾部分配
+        bck = victim->bk;       // bck为倒数第二个chunk
+        set_inuse_bit_at_offset(victim, nb);    // 设置相邻chunk中的P标记
         bin->bk = bck;
         bck->fd = bin;
 
-        if (av != &main_arena)
-	  victim->size |= NON_MAIN_ARENA;
-        check_malloced_chunk(av, victim, nb);
-	void *p = chunk2mem(victim);
-	if (__builtin_expect (perturb_byte, 0))
-	  alloc_perturb (p, bytes);
-	return p;
+        if (av != &main_arena)      // 是否为main arena
+	        victim->size |= NON_MAIN_ARENA;
+        check_malloced_chunk(av, victim, nb);       // debug
+		void *p = chunk2mem(victim);        // chunk转成mem地址
+		if (__builtin_expect (perturb_byte, 0))
+	        alloc_perturb (p, bytes);
+		return p;       // 返回内存空间地址
       }
     }
   }
@@ -4075,7 +4118,7 @@ _int_malloc(mstate av, size_t bytes)
      it is called frequently in otherwise tend to fragment.
   */
 
-  else {
+  else {        // smallbins中找不到，就在largebins中找
     idx = largebin_index(nb);
     if (have_fastchunks(av))
       malloc_consolidate(av);
@@ -4409,6 +4452,7 @@ _int_malloc(mstate av, size_t bytes)
 
 /*
   ------------------------------ free ------------------------------
+  free核心
 */
 
 void
@@ -4426,13 +4470,12 @@ _int_free(mstate av, Void_t* mem)
 
   const char *errstr = NULL;
 
-  p = mem2chunk(mem);
-  size = chunksize(p);
+  p = mem2chunk(mem);       // 转成chunk的地址
+  size = chunksize(p);      // 获取chunk的大小
 
-  /* Little security check which won't hurt performance: the
-     allocator never wrapps around at the end of the address space.
-     Therefore we can exclude some size values which might appear
-     here by accident or by "design" from some intruder.  */
+  /* 不会影响性能的小安全检查： 分配器永远不会在地址空间的末尾回绕。
+     因此，我们可以排除一些可能在此处意外或通过某些入侵者的“设计”出现的大小值。
+     */
   if (__builtin_expect ((uintptr_t) p > (uintptr_t) -size, 0)
       || __builtin_expect (misaligned_chunk (p), 0))
     {
@@ -4441,18 +4484,18 @@ _int_free(mstate av, Void_t* mem)
       malloc_printerr (check_action, errstr, mem);
       return;
     }
-  /* We know that each chunk is at least MINSIZE bytes in size.  */
+  /* 我们知道每个块的大小至少为 MINSIZE 字节。 */
   if (__builtin_expect (size < MINSIZE, 0))
     {
       errstr = "free(): invalid size";
       goto errout;
     }
 
-  check_inuse_chunk(av, p);
+  check_inuse_chunk(av, p);     // debug
 
   /*
-    If eligible, place chunk on a fastbin so it can be found
-    and used quickly in malloc.
+    如果符合条件，将块放在 fastbin 上，以便在 malloc 中快速找到并使用它。
+    size小于64字节时，放入fastbin中
   */
 
   if ((unsigned long)(size) <= (unsigned long)(get_max_fast ())
@@ -4474,10 +4517,9 @@ _int_free(mstate av, Void_t* mem)
 	goto errout;
       }
 
-    set_fastchunks(av);
-    fb = &(av->fastbins[fastbin_index(size)]);
-    /* Another simple check: make sure the top of the bin is not the
-       record we are going to add (i.e., double free).  */
+    set_fastchunks(av);     // 标记下存在fast chunk
+    fb = &(av->fastbins[fastbin_index(size)]);      // 找到对应fastbin的单链表头结点
+    /* 另一个简单的检查：确保 bin 的顶部不是我们要添加的记录（即，double free）。  */
     if (__builtin_expect (*fb == p, 0))
       {
 	errstr = "double free or corruption (fasttop)";
@@ -4486,13 +4528,14 @@ _int_free(mstate av, Void_t* mem)
 
     if (__builtin_expect (perturb_byte, 0))
       free_perturb (mem, size - SIZE_SZ);
-
+    // fastbin使用单链表管理，将p头插入单链表中
     p->fd = *fb;
     *fb = p;
+	// 结束
   }
 
   /*
-    Consolidate other non-mmapped chunks as they arrive.
+   在其他未映射的块到达时合并它们。
   */
 
   else if (!chunk_is_mmapped(p)) {
@@ -4633,20 +4676,17 @@ _int_free(mstate av, Void_t* mem)
 /*
   ------------------------- malloc_consolidate -------------------------
 
-  malloc_consolidate is a specialized version of free() that tears
-  down chunks held in fastbins.  Free itself cannot be used for this
-  purpose since, among other things, it might place chunks back onto
-  fastbins.  So, instead, we need to use a minor variant of the same
-  code.
+  malloc_consolidate 是 free() 的一个专门版本，它可以分解 fastbins 中的块。
+  Free 本身不能用于此目的，因为除其他外，它可能会将块放回 fastbins。
+  因此，相反，我们需要使用相同代码的次要变体。
 
-  Also, because this routine needs to be called the first time through
-  malloc anyway, it turns out to be the perfect place to trigger
-  initialization code.
+  此外，由于无论如何第一次都需要通过 malloc 调用此例程，因此它被证明是触发初始化代码的理想场所。
 */
 
 #if __STD_C
 static void malloc_consolidate(mstate av)
 #else
+//
 static void malloc_consolidate(av) mstate av;
 #endif
 {
@@ -4667,8 +4707,7 @@ static void malloc_consolidate(av) mstate av;
   mchunkptr       fwd;
 
   /*
-    If max_fast is 0, we know that av hasn't
-    yet been initialized, in which case do so below
+    如果 max_fast 为 0，我们知道 av 还没有被初始化，在这种情况下，请执行以下操作
   */
 
   if (get_max_fast () != 0) {
@@ -4737,8 +4776,9 @@ static void malloc_consolidate(av) mstate av;
     } while (fb++ != maxfb);
   }
   else {
+    // 初始化malloc_state
     malloc_init_state(av);
-    check_malloc_state(av);
+    check_malloc_state(av);     // debug
   }
 }
 

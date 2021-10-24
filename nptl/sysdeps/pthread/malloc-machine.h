@@ -47,7 +47,7 @@ extern void *__dso_handle __attribute__ ((__weak__));
 		      &__dso_handle == NULL ? NULL : __dso_handle)
 #endif
 
-/* thread specific data for glibc */
+/* glibc 的线程特定数据 */
 
 #include <bits/libc-tsd.h>
 

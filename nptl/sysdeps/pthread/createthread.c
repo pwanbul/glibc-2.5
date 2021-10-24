@@ -178,6 +178,7 @@ create_thread (struct pthread *pd, const struct pthread_attr *attr,
 
      The termination signal is chosen to be zero which means no signal
      is sent.  */
+  // 注意：#define CLONE_SIGNAL    	(CLONE_SIGHAND | CLONE_THREAD)
   int clone_flags = (CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGNAL
 		     | CLONE_SETTLS | CLONE_PARENT_SETTID
 		     | CLONE_CHILD_CLEARTID | CLONE_SYSVSEM
@@ -199,8 +200,7 @@ create_thread (struct pthread *pd, const struct pthread_attr *attr,
 	  /* We always must have the thread start stopped.  */
 	  pd->stopped_start = true;
 
-	  /* Create the thread.  We always create the thread stopped
-	     so that it does not get far before we tell the debugger.  */
+	  /* 创建线程。我们总是创建停止的线程，以便在我们告诉调试器之前它不会走得太远。 */
 	  int res = do_clone (pd, attr, clone_flags, start_thread,
 			      STACK_VARIABLES_ARGS, 1);
 	  if (res == 0)

@@ -956,27 +956,19 @@ pattern matching facilities (*note Pattern Matching::).
 1.2.2.1 POSIX Safety Concepts
 .............................
 
-This manual documents various safety properties of GNU C Library
-functions, in lines that follow their prototypes and look like:
+本手册记录了 GNU C 库函数的各种安全属性，在遵循其原型的行中，如下所示：
 
-Preliminary: | MT-Safe | AS-Safe | AC-Safe |
+初步: | MT-Safe | AS-Safe | AC-Safe |
 
-   The properties are assessed according to the criteria set forth in
-the POSIX standard for such safety contexts as Thread-, Async-Signal-
-and Async-Cancel- -Safety.  Intuitive definitions of these properties,
-attempting to capture the meaning of the standard definitions, follow.
+  这些属性是根据 POSIX 标准中针对诸如 Thread-、Async-Signal- 和 Async-Cancel--Safety
+  等安全上下文规定的标准进行评估的。这些属性的直观定义，试图捕捉标准定义的含义，如下。
 
-   • ‘MT-Safe’ or Thread-Safe functions are safe to call in the presence
-     of other threads.  MT, in MT-Safe, stands for Multi Thread.
+   • “MT-Safe”或线程安全函数在其他线程存在的情况下可以安全调用。 MT，在 MT-Safe 中，代表多线程。
 
-     Being MT-Safe does not imply a function is atomic, nor that it uses
-     any of the memory synchronization mechanisms POSIX exposes to
-     users.  It is even possible that calling MT-Safe functions in
-     sequence does not yield an MT-Safe combination.  For example,
-     having a thread call two MT-Safe functions one right after the
-     other does not guarantee behavior equivalent to atomic execution of
-     a combination of both functions, since concurrent calls in other
-     threads may interfere in a destructive way.
+     MT-Safe 并不意味着函数是原子的，也不意味着它使用 POSIX 向用户公开的任何内存同步机制。
+     甚至有可能按顺序调用 MT-Safe 函数不会产生 MT-Safe 组合。 例如，让一个线程一个接一个
+     地调用两个 MT-Safe 函数并不能保证与两个函数组合的原子执行等效的行为，因为其他线程
+     中的并发调用可能会以破坏性的方式进行干扰。
 
      Whole-program optimizations that could inline functions across
      library interfaces may expose unsafe reordering, and so performing
@@ -3604,60 +3596,37 @@ included only for compatibility.
 3 Virtual Memory Allocation And Paging
 **************************************
 
-This chapter describes how processes manage and use memory in a system
-that uses the GNU C Library.
+本章描述进程如何在使用 GNU C 库的系统中管理和使用内存。
 
-   The GNU C Library has several functions for dynamically allocating
-virtual memory in various ways.  They vary in generality and in
-efficiency.  The library also provides functions for controlling paging
-and allocation of real memory.
+   GNU C 库有几个函数可以以各种方式动态分配虚拟内存。它们的通用性和效率各不相同。
+   该库还提供用于控制分页和实内存分配的函数。
 
-   Memory mapped I/O is not discussed in this chapter.  *Note
-Memory-mapped I/O::.
+  本章不讨论内存映射 IO。注意内存映射 IO::.
 
 3.1 Process Memory Concepts
 ===========================
 
-One of the most basic resources a process has available to it is memory.
-There are a lot of different ways systems organize memory, but in a
-typical one, each process has one linear virtual address space, with
-addresses running from zero to some huge maximum.  It need not be
-contiguous; i.e., not all of these addresses actually can be used to
-store data.
+进程可用的最基本资源之一是内存。
+系统组织内存的方式有很多种，但在一个典型的方式中，每个进程都有一个线性虚拟地址空间，地址从零到某个巨大的最大值。
+它不必是连续的；即，并非所有这些地址实际上都可以用于存储数据。
 
-   The virtual memory is divided into pages (4 kilobytes is typical).
-Backing each page of virtual memory is a page of real memory (called a
-“frame”) or some secondary storage, usually disk space.  The disk space
-might be swap space or just some ordinary disk file.  Actually, a page
-of all zeroes sometimes has nothing at all backing it – there’s just a
-flag saying it is all zeroes.
+虚拟内存分为页（典型的 4 KB）。支持每一页虚拟内存的是一页实内存（称为“页框”）
+或一些辅助存储，通常是磁盘空间。磁盘空间可能是交换空间或只是一些普通的磁盘文件。
+实际上，一页全零有时根本没有任何支持——只有一个标志说它全零。
 
-   The same frame of real memory or backing store can back multiple
-virtual pages belonging to multiple processes.  This is normally the
-case, for example, with virtual memory occupied by GNU C Library code.
-The same real memory frame containing the ‘printf’ function backs a
-virtual memory page in each of the existing processes that has a
-‘printf’ call in its program.
+实内存或后备存储的同一页框可以备份属于多个进程的多个虚拟页面。 这通常是这种情况，
+例如，虚拟内存被 GNU C 库代码占用。
+包含“printf”函数的相同实内存帧在其程序中具有“printf”调用的每个现有进程中支持虚拟内存页。
 
-   In order for a program to access any part of a virtual page, the page
-must at that moment be backed by (“connected to”) a real frame.  But
-because there is usually a lot more virtual memory than real memory, the
-pages must move back and forth between real memory and backing store
-regularly, coming into real memory when a process needs to access them
-and then retreating to backing store when not needed anymore.  This
-movement is called “paging”.
+为了让程序访问虚拟页面的任何部分，该页面必须在那个时刻由（“连接到”）真实框架支持。
+但是因为虚拟内存通常比真实内存多得多，所以页面必须定期在真实内存和后备存储之间来回移动，
+当进程需要访问它们时进入真实内存，然后在不再需要时退回到后备存储. 这种运动称为“分页”。
 
-   When a program attempts to access a page which is not at that moment
-backed by real memory, this is known as a “page fault”.  When a page
-fault occurs, the kernel suspends the process, places the page into a
-real page frame (this is called “paging in” or “faulting in”), then
-resumes the process so that from the process’ point of view, the page
-was in real memory all along.  In fact, to the process, all pages always
-seem to be in real memory.  Except for one thing: the elapsed execution
-time of an instruction that would normally be a few nanoseconds is
-suddenly much, much, longer (because the kernel normally has to do I/O
-to complete the page-in).  For programs sensitive to that, the functions
-described in *note Locking Pages:: can control it.
+当程序试图访问当时没有真实内存支持的页面时，这被称为“页面错误”。 当页面错误发生时，
+内核暂停进程，将页面放入一个真正的页面框架中（这称为“分页”或“故障输入”），然后恢复进程，
+以便从进程的角度来看，页面一直在真实内存中。  事实上，对于进程来说，所有的页面似乎总是在真实内存中。
+除了一件事：通常为几纳秒的指令的执行时间突然变长了很多（因为内核通常必须执行 IO 才能完成页面输入）。
+对于敏感的程序，note Locking Pages::中描述的函数可以控制它。
 
    Within each virtual address space, a process has to keep track of
 what is at which addresses, and that process is called memory
@@ -3731,69 +3700,43 @@ special to the GNU C Library and GNU Compiler.
 3.2.1 Memory Allocation in C Programs
 -------------------------------------
 
-The C language supports two kinds of memory allocation through the
-variables in C programs:
+C语言通过C程序中的变量支持两种内存分配：
 
-   • “Static allocation” is what happens when you declare a static or
-     global variable.  Each static or global variable defines one block
-     of space, of a fixed size.  The space is allocated once, when your
-     program is started (part of the exec operation), and is never
-     freed.
+   • “静态分配”是当你声明一个静态或全局变量时发生的事情。
+      每个静态或全局变量定义一个固定大小的空间块。
+      该空间在您的程序启动时（exec 操作的一部分）分配一次，并且永远不会被释放。
 
-   • “Automatic allocation” happens when you declare an automatic
-     variable, such as a function argument or a local variable.  The
-     space for an automatic variable is allocated when the compound
-     statement containing the declaration is entered, and is freed when
-     that compound statement is exited.
+   • “自动分配”发生在您声明自动变量时，例如函数参数或局部变量。
+      自动变量的空间在包含声明的复合语句进入时分配，并在复合语句退出时释放。
 
-     In GNU C, the size of the automatic storage can be an expression
-     that varies.  In other C implementations, it must be a constant.
+    在 GNU C 中，自动存储的大小可以是一个变化的表达式。在其他 C 实现中，它必须是一个常量。
 
-   A third important kind of memory allocation, “dynamic allocation”, is
-not supported by C variables but is available via GNU C Library
-functions.
+   第三种重要的内存分配“动态分配”不受 C 变量支持，但可通过 GNU C 库函数使用。
 
 3.2.1.1 Dynamic Memory Allocation
 .................................
 
-“Dynamic memory allocation” is a technique in which programs determine
-as they are running where to store some information.  You need dynamic
-allocation when the amount of memory you need, or how long you continue
-to need it, depends on factors that are not known before the program
-runs.
+“动态内存分配”是一种技术，其中程序在运行时确定存储某些信息的位置。
+当您需要的内存量或您继续需要多长时间取决于程序运行之前未知的因素时，您需要动态分配。
 
-   For example, you may need a block to store a line read from an input
-file; since there is no limit to how long a line can be, you must
-allocate the memory dynamically and make it dynamically larger as you
-read more of the line.
+例如，您可能需要一个块来存储从输入文件中读取的行；由于对一行的长度没有限制，
+因此您必须动态分配内存并在您阅读更多行时动态地使其变大。
 
-   Or, you may need a block for each record or each definition in the
-input data; since you can’t know in advance how many there will be, you
-must allocate a new block for each record or definition as you read it.
+或者，您可能需要为输入数据中的每个记录或每个定义一个块；
+由于您无法预先知道会有多少，因此您必须在阅读时为每个记录或定义分配一个新块。
 
-   When you use dynamic allocation, the allocation of a block of memory
-is an action that the program requests explicitly.  You call a function
-or macro when you want to allocate space, and specify the size with an
-argument.  If you want to free the space, you do so by calling another
-function or macro.  You can do these things whenever you want, as often
-as you want.
+使用动态分配时，内存块的分配是程序显式请求的操作。 当您想分配空间时调用函数或宏，
+并用参数指定大小。 如果你想释放空间，你可以通过调用另一个函数或宏来实现。
+你可以随时随地做这些事情。
 
-   Dynamic allocation is not supported by C variables; there is no
-storage class “dynamic”, and there can never be a C variable whose value
-is stored in dynamically allocated space.  The only way to get
-dynamically allocated memory is via a system call (which is generally
-via a GNU C Library function call), and the only way to refer to
-dynamically allocated space is through a pointer.  Because it is less
-convenient, and because the actual process of dynamic allocation
-requires more computation time, programmers generally use dynamic
-allocation only when neither static nor automatic allocation will serve.
+C 变量不支持动态分配；没有“动态”的存储类，永远不可能有一个 C 变量的值存储在动态分配的空间中。
+获得动态分配内存的唯一方法是通过系统调用（通常通过 GNU C 库函数调用），
+而引用动态分配空间的唯一方法是通过指针。 因为不太方便，而且动态分配的实际过程需要更多的计算时间，
+所以程序员一般只有在静态分配和自动分配都不会服务的情况下才使用动态分配。
 
-   For example, if you want to allocate dynamically some space to hold a
-‘struct foobar’, you cannot declare a variable of type ‘struct foobar’
-whose contents are the dynamically allocated space.  But you can declare
-a variable of pointer type ‘struct foobar *’ and assign it the address
-of the space.  Then you can use the operators ‘*’ and ‘->’ on this
-pointer variable to refer to the contents of the space:
+例如，如果你想动态分配一些空间来保存一个‘struct foobar’，你不能声明一个‘struct foobar’类型的变量，
+其内容是动态分配的空间。  但是你可以声明一个指针类型为‘struct foobar’的变量，并为它分配空间的地址.
+然后你可以在这个指针变量上使用运算符‘*’和‘->’来引用空间的内容：
 
      {
        struct foobar *ptr = malloc (sizeof *ptr);

@@ -33,7 +33,7 @@ malloc_hook_ini(sz, caller)
      size_t sz; const __malloc_ptr_t caller;
 #endif
 {
-  __malloc_hook = NULL;
+  __malloc_hook = NULL;     // 将__malloc_hook清除
   ptmalloc_init();
   return public_mALLOc(sz);
 }

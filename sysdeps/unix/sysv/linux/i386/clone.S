@@ -96,7 +96,7 @@ ENTRY (BP_SYM (__clone))
 	cfi_rel_offset (ebx, 8)
 	movl	CTID+12(%esp),%edi
 	cfi_rel_offset (edi, 0)
-	movl	$SYS_ify(clone),%eax
+	movl	$SYS_ify(clone),%eax		// 使用clone系统调用
 
 #ifdef RESET_PID
 	/* Remember the flag value.  */
@@ -107,7 +107,7 @@ ENTRY (BP_SYM (__clone))
 	   wrong.  */
 	cfi_endproc
 
-	int	$0x80
+	int	$0x80		// 发出系统调用
 	popl	%edi
 	popl	%esi
 	popl	%ebx

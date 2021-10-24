@@ -23,8 +23,7 @@
 
 #ifdef __NR_time
 
-time_t
-time (t)
+time_t time (t)
      time_t *t;
 {
   INTERNAL_SYSCALL_DECL (err);

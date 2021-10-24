@@ -71,10 +71,10 @@ extern int sanity_check_heap_info_alignment[(sizeof (heap_info)
 					     + 2 * SIZE_SZ) % MALLOC_ALIGNMENT
 					    ? -1 : 1];
 
-/* Thread specific data */
+/* 线程特定数据 */
 
 static tsd_key_t arena_key;
-static mutex_t list_lock;
+static mutex_t list_lock;       // arena链表锁
 
 #if THREAD_STATS
 static int stat_n_heaps;
@@ -93,13 +93,16 @@ int __malloc_initialized = -1;
 
 #if USE_ARENAS
 
-/* arena_get() acquires an arena and locks the corresponding mutex.
-   First, try the one last locked successfully by this thread.  (This
-   is the common case and handled with a macro for speed.)  Then, loop
-   once over the circularly linked list of arenas.  If no arena is
-   readily available, create a new one.  In this latter case, `size'
-   is just a hint as to how much memory will be required immediately
-   in the new arena. */
+/* arena_get() 获取一个 arena 并锁定相应的互斥锁。
+  首先，尝试该线程最后成功锁定的一个。 （这是常见情况，使用宏处理以提高速度。）
+  然后，在循环链接的 arenas 列表上循环一次。如果没有可用的竞技场，请创建一个新的竞技场。
+  在后一种情况下，“大小”只是一个提示，表明新领域将立即需要多少内存。
+
+  arena_get首先调用tsd_getspecific查找本线程的私用实例中是否包含一个分配区的指针，
+  返回该指针，调用 arena_lock 尝试对该分配区加锁，如果加锁成功，使用该分配区分配内存;
+
+  如果对该分配区加锁失败，调用arena_get2获得一个分配区指针。
+  */
 
 #define arena_get(ptr, size) do { \
   Void_t *vptr = NULL; \
@@ -119,7 +122,7 @@ int __malloc_initialized = -1;
 
 #else /* !USE_ARENAS */
 
-/* There is only one arena, main_arena. */
+/* 只有一个竞技场，main_arena。 */
 
 #if THREAD_STATS
 #define arena_get(ar_ptr, sz) do { \
@@ -225,9 +228,8 @@ free_atfork(Void_t* mem, const Void_t *caller)
 /* Counter for number of times the list is locked by the same thread.  */
 static unsigned int atfork_recursive_cntr;
 
-/* The following two functions are registered via thread_atfork() to
-   make sure that the mutexes remain in a consistent state in the
-   fork()ed version of a thread.  Also adapt the malloc and free hooks
+/* 以下两个函数通过 thread_atfork() 注册，以确保互斥锁在线程的 fork() 版本中保持一致状态。
+ * Also adapt the malloc and free hooks
    temporarily, because the `atfork' handler mechanism may use
    malloc/free internally (e.g. in LinuxThreads). */
 
@@ -359,17 +361,17 @@ next_env_entry (char ***position)
 }
 #endif /* _LIBC */
 
-/* Set up basic state so that _int_malloc et al can work.  */
+/* 设置基本状态，以便 _int_malloc 等人可以工作.  */
 static void
 ptmalloc_init_minimal (void)
 {
 #if DEFAULT_TOP_PAD != 0
   mp_.top_pad        = DEFAULT_TOP_PAD;
 #endif
-  mp_.n_mmaps_max    = DEFAULT_MMAP_MAX;
-  mp_.mmap_threshold = DEFAULT_MMAP_THRESHOLD;
-  mp_.trim_threshold = DEFAULT_TRIM_THRESHOLD;
-  mp_.pagesize       = malloc_getpagesize;
+  mp_.n_mmaps_max    = DEFAULT_MMAP_MAX;        // 64kb
+  mp_.mmap_threshold = DEFAULT_MMAP_THRESHOLD;  // 128kb
+  mp_.trim_threshold = DEFAULT_TRIM_THRESHOLD; // 128kb
+  mp_.pagesize       = malloc_getpagesize;      // 4kb
 }
 
 
@@ -424,6 +426,7 @@ ptmalloc_init (void)
 #endif
   int secure = 0;
 
+	// 如果已经初始化，则返回
   if(__malloc_initialized >= 0) return;
   __malloc_initialized = 0;
 
@@ -434,33 +437,32 @@ ptmalloc_init (void)
   if (mp_.pagesize == 0)
 # endif
 #endif
-    ptmalloc_init_minimal();
+    ptmalloc_init_minimal();        // mp_初始化
 
 #ifndef NO_THREADS
 # if defined _LIBC && defined USE_TLS
-  /* We know __pthread_initialize_minimal has already been called,
-     and that is enough.  */
+  /* 我们知道 __pthread_initialize_minimal 已经被调用了，这就足够了。  */
 #   define NO_STARTER
 # endif
+
 # ifndef NO_STARTER
-  /* With some threads implementations, creating thread-specific data
-     or initializing a mutex may call malloc() itself.  Provide a
-     simple starter version (realloc() won't work). */
-  save_malloc_hook = __malloc_hook;
+  /* 对于某些线程实现，创建线程特定数据或初始化互斥锁可能会调用 malloc() 本身。
+   * 提供一个简单的入门版本（realloc() 不起作用）。 */
+  save_malloc_hook = __malloc_hook;     // 暂存原本的hook函数
   save_memalign_hook = __memalign_hook;
   save_free_hook = __free_hook;
-  __malloc_hook = malloc_starter;
+  __malloc_hook = malloc_starter;       // 设置新的hook函数
   __memalign_hook = memalign_starter;
   __free_hook = free_starter;
 #  ifdef _LIBC
-  /* Initialize the pthreads interface. */
+  /* 初始化 pthreads 接口. */
   if (__pthread_initialize != NULL)
     __pthread_initialize();
 #  endif /* !defined _LIBC */
 # endif	/* !defined NO_STARTER */
 #endif /* !defined NO_THREADS */
-  mutex_init(&main_arena.mutex);
-  main_arena.next = &main_arena;
+  mutex_init(&main_arena.mutex);        // 初始化main arena的互斥锁
+  main_arena.next = &main_arena;        // 初始化链表
 
 #if defined _LIBC && defined SHARED
   /* In case this libc copy is in a non-default namespace, never use brk.
@@ -474,9 +476,9 @@ ptmalloc_init (void)
     __morecore = __failing_morecore;
 #endif
 
-  mutex_init(&list_lock);
-  tsd_key_create(&arena_key, NULL);
-  tsd_setspecific(arena_key, (Void_t *)&main_arena);
+  mutex_init(&list_lock);       // 初始化全局链表
+  tsd_key_create(&arena_key, NULL);     // 创建线程私有数据
+  tsd_setspecific(arena_key, (Void_t *)&main_arena);        // 在当前线程上保存指向main arena的指针
   thread_atfork(ptmalloc_lock_all, ptmalloc_unlock_all, ptmalloc_unlock_all2);
 #ifndef NO_THREADS
 # ifndef NO_STARTER
@@ -839,6 +841,17 @@ _int_new_arena(size_t size)
   return a;
 }
 
+/* 如果arena_get对该分配区加锁失败，调用arena_get2获得一个分配区指针。
+ * 如果定义了PRE_THREAD，arena_lock的处理有些不同，如果本线程拥有的私用实例中包含分配区的指针，则直接对该
+分配区加锁，否则，调用 arena_get2 获得分配区指针，PRE_THREAD 的优化保证了每个线程
+尽量从自己所属的分配区中分配内存，减少与其它线程因共享分配区带来的锁开销，但
+PRE_THREAD 的优化并不能保证每个线程都有一个不同的分配区，当系统中的分配区数量达
+到配置的最大值时，不能再增加新的分配区，如果再增加新的线程，就会有多个线程共享同
+一个分配区。所以 ptmalloc 的 PRE_THREAD 优化，对线程少时可能会提升一些性能，但线程
+多时，提升性能并不明显。即使没有线程共享分配区的情况下，任然需要加锁，这是不必要
+的开销，每次加锁操作会消耗 100ns 左右的时间。
+ * */
+
 static mstate
 internal_function
 #if __STD_C
@@ -849,47 +862,45 @@ arena_get2(a_tsd, size) mstate a_tsd; size_t size;
 {
   mstate a;
 
-  if(!a_tsd)
+  if(!a_tsd)            // a_tsd为NULL，表示当前线程没有arena
     a = a_tsd = &main_arena;
-  else {
-    a = a_tsd->next;
+  else {        // 走到这里，说明当前线程有arena，但加锁不成功
+    a = a_tsd->next;        // 找到下一个arena
     if(!a) {
-      /* This can only happen while initializing the new arena. */
+      /* 这只能在初始化新竞技场时发生 */
       (void)mutex_lock(&main_arena.mutex);
       THREAD_STAT(++(main_arena.stat_lock_wait));
       return &main_arena;
     }
   }
 
-  /* Check the global, circularly linked list for available arenas. */
+  /* 检查可用领域的全局循环链表. */
   bool retried = false;
  repeat:
   do {
     if(!mutex_trylock(&a->mutex)) {
       if (retried)
-	(void)mutex_unlock(&list_lock);
+	    (void)mutex_unlock(&list_lock);
       THREAD_STAT(++(a->stat_lock_loop));
-      tsd_setspecific(arena_key, (Void_t *)a);
+      tsd_setspecific(arena_key, (Void_t *)a);      // 加锁成功后，设置为当前线程的私有数据
       return a;
     }
-    a = a->next;
+    a = a->next;        // 遍历所有的arena
   } while(a != a_tsd);
 
-  /* If not even the list_lock can be obtained, try again.  This can
-     happen during `atfork', or for example on systems where thread
-     creation makes it temporarily impossible to obtain _any_
-     locks. */
+  /* 如果连list_lock都无法获取，再试一次。
+   * 这可能发生在 `atfork' 期间，或者例如在线程创建使得暂时无法获得 _any_ 锁的系统上。 */
   if(!retried && mutex_trylock(&list_lock)) {
-    /* We will block to not run in a busy loop.  */
+    /* 我们将阻塞以不在繁忙循环中运行。  */
     (void)mutex_lock(&list_lock);
 
-    /* Since we blocked there might be an arena available now.  */
+    /* 由于我们封锁了，现在可能有一个可用的竞技场。  */
     retried = true;
     a = a_tsd;
     goto repeat;
   }
 
-  /* Nothing immediately available, so generate a new arena.  */
+  /* 没有立即可用的，所以创建一个新的竞技场。  */
   a = _int_new_arena(size);
   if(a)
     {
