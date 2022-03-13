@@ -55,16 +55,15 @@ extern void (*__fini_array_end []) (void) attribute_hidden;
 extern void _init (void);
 extern void _fini (void);
 
-/* These functions are passed to __libc_start_main by the startup code.
-   These get statically linked into each program.  For dynamically linked
-   programs, this module will come from libc_nonshared.a and differs from
-   the libc.a module in that it doesn't call the preinit array.  */
+/* 这些函数由启动代码传递给__libc_start_main。这些静态链接到每个程序中。
+ * 对于动态链接的程序，此模块将来自libc_nonshared.a，
+ * 与libc.a模块的不同之处在于它不调用preinit数组。
+ * */
 
 void
 __libc_csu_init (int argc, char **argv, char **envp)
 {
-  /* For dynamically linked executables the preinit array is executed by
-     the dynamic linker (before initializing any shared object.  */
+  /* 对于动态链接的可执行文件，preinit数组由动态链接器执行（在初始化任何共享对象之前）。  */
 
 #ifndef LIBC_NONSHARED
   /* For static executables, preinit happens rights before init.  */
@@ -83,9 +82,7 @@ __libc_csu_init (int argc, char **argv, char **envp)
       (*__init_array_start [i]) (argc, argv, envp);
 }
 
-/* This function should not be used anymore.  We run the executable's
-   destructor now just like any other.  We cannot remove the function,
-   though.  */
+/* 不应再使用此功能。我们现在运行可执行文件的析构函数，就像其他的一样。但是，我们不能删除该功能。  */
 void
 __libc_csu_fini (void)
 {

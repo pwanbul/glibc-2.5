@@ -21,7 +21,7 @@
 #undef	rand
 
 
-/* Return a random integer between 0 and RAND_MAX.  */
+/* 返回0到RAND_MAX之间的随机整数.  */
 int
 rand ()
 {

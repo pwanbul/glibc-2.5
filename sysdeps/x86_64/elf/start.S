@@ -108,8 +108,7 @@ _start:
 
 	movq $BP_SYM (main), %rdi
 
-	/* Call the user's main function, and exit with its value.
-	   But let the libc call main.	  */
+	/* 调用用户的main函数，并以其值退出。但是让libc调用main。	  */
 	call BP_SYM (__libc_start_main)
 #endif
 

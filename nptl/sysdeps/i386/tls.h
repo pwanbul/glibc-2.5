@@ -250,12 +250,11 @@ union user_desc_init
      THREAD_GETMEM (__pd, header.dtv); })
 
 
-/* Return the thread descriptor for the current thread.
+/* 返回当前线程的线程描述符。
 
-   The contained asm must *not* be marked volatile since otherwise
-   assignments like
+   包含的asm不得标记为volatile，因为否则分配像
         pthread_descr self = thread_self();
-   do not get optimized away.  */
+   不要被优化掉。  */
 # define THREAD_SELF \
   ({ struct pthread *__self;						      \
      asm ("movl %%gs:%c1,%0" : "=r" (__self)				      \

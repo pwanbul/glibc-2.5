@@ -23,6 +23,7 @@
 #include <stdint.h>
 
 
+// 线程属性
 struct pthread_attr
 {
   /* Scheduler parameters and priority.  */
@@ -30,10 +31,11 @@ struct pthread_attr
   int schedpolicy;
   /* Various flags like detachstate, scope, etc.  */
   int flags;
-  /* Size of guard area.  */
+  /* 警戒区的大小。线程栈末尾的警戒缓冲区大小（字节数）  */
   size_t guardsize;
-  /* Stack handling.  */
+  /* 线程栈的最低地址  */
   void *stackaddr;
+  /* 线程栈的大小（字节数） */
   size_t stacksize;
   /* Affinity map.  */
   cpu_set_t *cpuset;

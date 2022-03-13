@@ -26,16 +26,14 @@
 DEFINE_HOOK (__libc_atexit, (void))
 
 
-/* Call all functions registered with `atexit' and `on_exit',
-   in the reverse of the order in which they were registered
-   perform stdio cleanup, and terminate program execution with STATUS.  */
+/* 调用所有用`atexit'和`on_exit'注册的函数，
+ * 按照它们注册的相反顺序执行stdio清理，并以STATUS终止程序执行。
+ * */
 void
 exit (int status)
 {
-  /* We do it this way to handle recursive calls to exit () made by
-     the functions registered with `atexit' and `on_exit'. We call
-     everyone on the list and use the status value in the last
-     exit (). */
+  /* 我们这样做是为了处理由`atexit'和`on_exit'注册的函数对exit()的递归调用。
+   * 我们调用列表中的每个人，并使用最后一个exit()中的状态值。 */
   while (__exit_funcs != NULL)
     {
       struct exit_function_list *old;
@@ -85,7 +83,7 @@ exit (int status)
 	free (old);
     }
 
-  RUN_HOOK (__libc_atexit, ());
+  RUN_HOOK (__libc_atexit, ());             // 在这里冲洗并关闭标准IO
 
   _exit (status);
 }

@@ -24,7 +24,7 @@
    bytes.  */
 #define STACK_ALIGN		16
 
-/* Minimal stack size after allocating thread descriptor and guard size.  */
+/* 分配线程描述符和保护大小后的最小堆栈大小。  */
 #define MINIMAL_REST_STACK	2048
 
 /* Alignment requirement for TCB.  */

@@ -159,14 +159,13 @@ LIBC_START_MAIN (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
 #  endif
 #endif
 
-  /* Register the destructor of the dynamic linker if there is any.  */
+  /* 如果有的话，注册动态链接器的析构函数。  */
   if (__builtin_expect (rtld_fini != NULL, 1))
     __cxa_atexit ((void (*) (void *)) rtld_fini, NULL, NULL);
 
 #ifndef SHARED
-  /* Call the initializer of the libc.  This is only needed here if we
-     are compiling for the static library in which case we haven't
-     run the constructors in `_dl_start_user'.  */
+  /* 调用 libc 的初始化程序。仅当我们为静态库进行编译时才需要这里，
+   * 在这种情况下我们没有在 `_dl_start_user' 中运行构造函数。  */
   __libc_init_first (argc, argv, __environ);
 
   /* Register the destructor of the program, if any.  */

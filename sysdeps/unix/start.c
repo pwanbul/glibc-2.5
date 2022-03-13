@@ -61,8 +61,7 @@ static void start1();
 
 #ifndef	HAVE__start
 
-/* N.B.: It is important that this be the first function.
-   This file is the first thing in the text section.  */
+/* N.B.：重要的是这是第一个函数。这个文件是文本部分的第一件事。  */
 void
 _start ()
 {
@@ -70,9 +69,9 @@ _start ()
 }
 
 #ifndef NO_UNDERSCORES
-/* Make an alias called `start' (no leading underscore, so it can't
-   conflict with C symbols) for `_start'.  This is the name vendor crt0.o's
-   tend to use, and thus the name most linkers expect.  */
+/* 为“_start”创建一个名为“start”的别名（没有前导下划线，因此它不会与 C 符号冲突）。
+ * 这是供应商 crt0.o 倾向于使用的名称，因此也是大多数链接器所期望的名称。
+ * */
 asm (".set start, __start");
 #endif
 
@@ -87,19 +86,17 @@ start1 (ARG_DUMMIES argc, argp)
 {
   char **argv = &argp;
 
-  /* The environment starts just after ARGV.  */
+  /* 环境在ARGV之后开始。  */
   __environ = &argv[argc + 1];
 
-  /* If the first thing after ARGV is the arguments
-     themselves, there is no environment.  */
+  /* 如果ARGV之后的第一件事是参数本身，则没有环境。  */
   if ((char *) __environ == *argv)
-    /* The environment is empty.  Make __environ
-       point at ARGV[ARGC], which is NULL.  */
+    /* 环境是空的。使__environ指向ARGV[ARGC]，即NULL。  */
     --__environ;
 
-  /* Do C library initializations.  */
+  /* 进行C库初始化。  */
   __libc_init (argc, argv, __environ);
 
-  /* Call the user program.  */
+  /* 调用用户程序。  */
   exit (main (argc, argv, __environ));
 }

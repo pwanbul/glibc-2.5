@@ -150,34 +150,27 @@ create_thread (struct pthread *pd, const struct pthread_attr *attr,
   /* We rely heavily on various flags the CLONE function understands:
 
      CLONE_VM, CLONE_FS, CLONE_FILES
-	These flags select semantics with shared address space and
-	file descriptors according to what POSIX requires.
+	这些标志根据POSIX要求选择具有共享地址空间和文件描述符的语义。
 
      CLONE_SIGNAL
-	This flag selects the POSIX signal semantics.
+	此标志选择POSIX信号语义。
 
      CLONE_SETTLS
-	The sixth parameter to CLONE determines the TLS area for the
-	new thread.
+	CLONE的第六个参数确定新线程的TLS区域。
 
      CLONE_PARENT_SETTID
-	The kernels writes the thread ID of the newly created thread
-	into the location pointed to by the fifth parameters to CLONE.
+	内核将新创建的线程的线程ID写入CLONE的第五个参数指向的位置。
 
-	Note that it would be semantically equivalent to use
-	CLONE_CHILD_SETTID but it is be more expensive in the kernel.
+	请注意，它在语义上等同于使用CLONE_CHILD_SETTID，但在内核中成本更高。
 
      CLONE_CHILD_CLEARTID
-	The kernels clears the thread ID of a thread that has called
-	sys_exit() in the location pointed to by the seventh parameter
-	to CLONE.
+	内核清除在第7个参数指向CLONE的位置调用sys_exit()的线程的线程 ID。
 
      CLONE_DETACHED
-	No signal is generated if the thread exists and it is
-	automatically reaped.
+	如果线程存在并自动收割，则不会生成信号。
 
-     The termination signal is chosen to be zero which means no signal
-     is sent.  */
+     终止信号被选择为零，这意味着没有信号被发送。
+     */
   // 注意：#define CLONE_SIGNAL    	(CLONE_SIGHAND | CLONE_THREAD)
   int clone_flags = (CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGNAL
 		     | CLONE_SETTLS | CLONE_PARENT_SETTID

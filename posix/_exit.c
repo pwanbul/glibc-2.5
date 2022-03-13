@@ -19,9 +19,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-/* The function `_exit' should take a status argument and simply
-   terminate program execution, using the low-order 8 bits of the
-   given integer as status.  */
+/* 函数“_exit”应该接受一个状态参数并简单地终止程序执行，
+ * 使用给定整数的低8位作为状态。 */
 void
 _exit (status)
      int status;

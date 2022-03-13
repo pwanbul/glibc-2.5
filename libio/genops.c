@@ -1000,17 +1000,13 @@ libc_freeres_fn (buffer_free)
 int
 _IO_cleanup ()
 {
-  /* We do *not* want locking.  Some threads might use streams but
-     that is their problem, we flush them underneath them.  */
+  /* 我们不想锁定。有些线程可能会使用流，但这是它们的问题，我们将它们刷新到它们下面。  */
   int result = _IO_flush_all_lockp (0);
 
-  /* We currently don't have a reliable mechanism for making sure that
-     C++ static destructors are executed in the correct order.
-     So it is possible that other static destructors might want to
-     write to cout - and they're supposed to be able to do so.
+  /* 我们目前没有可靠的机制来确保 C++ 静态析构函数以正确的顺序执行。
+   * 因此，其他静态析构函数可能想要写入 cout - 他们应该能够这样做。
 
-     The following will make the standard streambufs be unbuffered,
-     which forces any output from late destructors to be written out. */
+     以下将使标准流缓冲区无缓冲，这将强制写出来自后期析构函数的任何输出。 */
   _IO_unbuffer_write ();
 
   return result;

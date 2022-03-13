@@ -321,7 +321,7 @@ for linking")
 
 #ifdef HAVE_ELF
 
-/* Make SYMBOL, which is in the text segment, an element of SET.  */
+/* 使文本段中的SYMBOL成为SET的一个元素。  */
 # define text_set_element(set, symbol)	_elf_set_element(set, symbol)
 /* Make SYMBOL, which is in the data segment, an element of SET.  */
 # define data_set_element(set, symbol)	_elf_set_element(set, symbol)
@@ -331,8 +331,7 @@ for linking")
 /* These are all done the same way in ELF.
    There is a new section created for each set.  */
 # ifdef SHARED
-/* When building a shared library, make the set section writable,
-   because it will need to be relocated at run time anyway.  */
+/* 构建共享库时，使 set 部分可写，因为无论如何它都需要在运行时重新定位。  */
 #  define _elf_set_element(set, symbol) \
   static const void *__elf_set_##set##_element_##symbol##__ \
     __attribute__ ((used, section (#set))) = &(symbol)

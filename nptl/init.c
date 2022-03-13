@@ -270,8 +270,8 @@ __pthread_initialize_minimal_internal (void)
   __asm __volatile ("");
 #endif
 
-  /* Minimal initialization of the thread descriptor.  */
-  struct pthread *pd = THREAD_SELF;
+  /* 线程描述符的最小初始化。  */
+  struct pthread *pd = THREAD_SELF;         // 返回当前线程的线程描述符
   INTERNAL_SYSCALL_DECL (err);
   pd->pid = pd->tid = INTERNAL_SYSCALL (set_tid_address, err, 1, &pd->tid);
   THREAD_SETMEM (pd, specific[0], &pd->specific_1stblock[0]);
@@ -307,9 +307,9 @@ __pthread_initialize_minimal_internal (void)
   list_add (&pd->list, &__stack_user);
 
 
-  /* Install the cancellation signal handler.  If for some reason we
-     cannot install the handler we do not abort.  Maybe we should, but
-     it is only asynchronous cancellation which is affected.  */
+  /* 安装取消信号处理程序。
+   * 如果由于某种原因我们无法安装我们不会中止的处理程序。
+   * 也许我们应该这样做，但受影响的只是异步取消。 */
   struct sigaction sa;
   sa.sa_sigaction = sigcancel_handler;
   sa.sa_flags = SA_SIGINFO;
@@ -331,8 +331,7 @@ __pthread_initialize_minimal_internal (void)
   (void) INTERNAL_SYSCALL (rt_sigprocmask, err, 4, SIG_UNBLOCK, &sa.sa_mask,
 			   NULL, _NSIG / 8);
 
-  /* Get the size of the static and alignment requirements for the TLS
-     block.  */
+  /* 获取TLS块的静态和对齐要求的大小。 */
   size_t static_tls_align;
   _dl_get_tls_static_info (&__static_tls_size, &static_tls_align);
 
@@ -343,27 +342,24 @@ __pthread_initialize_minimal_internal (void)
 
   __static_tls_size = roundup (__static_tls_size, static_tls_align);
 
-  /* Determine the default allowed stack size.  This is the size used
-     in case the user does not specify one.  */
+  /* 确定默认允许的堆栈大小。这是在用户未指定时使用的大小。  */
   struct rlimit limit;
   if (getrlimit (RLIMIT_STACK, &limit) != 0
       || limit.rlim_cur == RLIM_INFINITY)
-    /* The system limit is not usable.  Use an architecture-specific
-       default.  */
-    limit.rlim_cur = ARCH_STACK_DEFAULT_SIZE;
+    /* 系统限制不可用。使用特定于体系结构的默认值。  */
+    limit.rlim_cur = ARCH_STACK_DEFAULT_SIZE;       // 2K
   else if (limit.rlim_cur < PTHREAD_STACK_MIN)
-    /* The system limit is unusably small.
-       Use the minimal size acceptable.  */
-    limit.rlim_cur = PTHREAD_STACK_MIN;
+    /* 系统限制小得无法使用。使用可接受的最小尺寸.  */
+    limit.rlim_cur = PTHREAD_STACK_MIN;        // 2^14=16384
 
-  /* Make sure it meets the minimum size that allocate_stack
-     (allocatestack.c) will demand, which depends on the page size.  */
+  /* 确保它满足allocate_stack(allocatestack.c)要求的最小大小，这取决于页面大小。 */
   const uintptr_t pagesz = __sysconf (_SC_PAGESIZE);
+  // MINIMAL_REST_STACK表分配线程描述符和保护大小后的最小堆栈大小，2048
   const size_t minstack = pagesz + __static_tls_size + MINIMAL_REST_STACK;
   if (limit.rlim_cur < minstack)
     limit.rlim_cur = minstack;
 
-  /* Round the resource limit up to page size.  */
+  /* 将资源限制四舍五入到页面大小。  */
   limit.rlim_cur = (limit.rlim_cur + pagesz - 1) & -pagesz;
   __default_stacksize = limit.rlim_cur;
 

@@ -305,29 +305,27 @@ allocate_stack (const struct pthread_attr *attr, struct pthread **pdp,
 {
   struct pthread *pd;
   size_t size;
-  size_t pagesize_m1 = __getpagesize () - 1;
+  size_t pagesize_m1 = __getpagesize () - 1;        // 4K-1
   void *stacktop;
 
   assert (attr != NULL);
   assert (powerof2 (pagesize_m1 + 1));
   assert (TCB_ALIGNMENT >= STACK_ALIGN);
 
-  /* Get the stack size from the attribute if it is set.  Otherwise we
-     use the default we determined at start time.  */
+  /* 如果已设置，则从属性中获取堆栈大小。否则，我们使用我们在开始时确定的默认值。  */
   size = attr->stacksize ?: __default_stacksize;
 
-  /* Get memory for the stack.  */
+  /* 获取堆栈的内存。  */
   if (__builtin_expect (attr->flags & ATTR_FLAG_STACKADDR, 0))
     {
       uintptr_t adj;
 
-      /* If the user also specified the size of the stack make sure it
-	 is large enough.  */
+      /* 如果用户还指定了堆栈的大小，请确保它足够大。 */
       if (attr->stacksize != 0
 	  && attr->stacksize < (__static_tls_size + MINIMAL_REST_STACK))
 	return EINVAL;
 
-      /* Adjust stack size for alignment of the TLS block.  */
+      /* 调整堆栈大小以对齐TLS块。  */
 #if TLS_TCB_AT_TP
       adj = ((uintptr_t) attr->stackaddr - TLS_TCB_SIZE)
 	    & __static_tls_align_m1;
@@ -338,10 +336,8 @@ allocate_stack (const struct pthread_attr *attr, struct pthread **pdp,
       assert (size > adj);
 #endif
 
-      /* The user provided some memory.  Let's hope it matches the
-	 size...  We do not allocate guard pages if the user provided
-	 the stack.  It is the user's responsibility to do this if it
-	 is wanted.  */
+      /* 用户提供了一些内存。让我们希望它与大小匹配......如果用户提供堆栈，
+       * 我们不会分配保护页面。如果需要，用户有责任这样做。  */
 #if TLS_TCB_AT_TP
       pd = (struct pthread *) ((uintptr_t) attr->stackaddr
 			       - TLS_TCB_SIZE - adj);
@@ -351,7 +347,7 @@ allocate_stack (const struct pthread_attr *attr, struct pthread **pdp,
 			       - TLS_PRE_TCB_SIZE);
 #endif
 
-      /* The user provided stack memory needs to be cleared.  */
+      /* 需要清除用户提供的堆栈内存。  */
       memset (pd, '\0', sizeof (struct pthread));
 
       /* The first TSD block is included in the TCB.  */
@@ -398,7 +394,7 @@ allocate_stack (const struct pthread_attr *attr, struct pthread **pdp,
     }
   else
     {
-      /* Allocate some anonymous memory.  If possible use the cache.  */
+      /* 分配一些匿名内存。如果可能，请使用缓存。  */
       size_t guardsize;
       size_t reqsize;
       void *mem;

@@ -431,7 +431,7 @@ __pthread_create_2_1 (newthread, attr, start_routine, arg)
     iattr = &default_attr;
 
   struct pthread *pd = NULL;
-  int err = ALLOCATE_STACK (iattr, &pd);
+  int err = ALLOCATE_STACK (iattr, &pd);        //
   if (__builtin_expect (err != 0, 0))
     /* 出了些问题。也许属性的参数无效或我们无法分配内存。  */
     return err;

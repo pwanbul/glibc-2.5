@@ -76,7 +76,7 @@ extern void _init (void);
 void
 _init (void)
 {
-  /* The very first thing we must do is to set up the registers.  */
+  /* 我们必须做的第一件事是设置寄存器。  */
   call_initialize_minimal ();
 
   asm ("ALIGN");

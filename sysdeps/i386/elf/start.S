@@ -105,7 +105,7 @@ _start:
 	   But let the libc call main.    */
 	call BP_SYM (__libc_start_main)@PLT
 #else
-	/* Push address of our own entry points to .fini and .init.  */
+	/* 将我们自己的入口点地址推送到.fini和.init。 */
 	pushl $__libc_csu_fini
 	pushl $__libc_csu_init
 
@@ -114,8 +114,8 @@ _start:
 
 	pushl $BP_SYM (main)
 
-	/* Call the user's main function, and exit with its value.
-	   But let the libc call main.    */
+	/* 调用用户的main函数，并以其值退出。
+	 * 但是让libc调用main。    */
 	call BP_SYM (__libc_start_main)
 #endif
 

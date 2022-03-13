@@ -33,8 +33,7 @@
 # include <dl-tls.h>
 # include <ldsodefs.h>
 
-/* Amount of excess space to allocate in the static TLS area
-   to allow dynamic loading of modules defining IE-model TLS data.  */
+/* 在静态TLS区域中分配的多余空间量，以允许动态加载定义IE模型TLS数据的模块。  */
 # define TLS_STATIC_SURPLUS	64 + DL_NNS * 100
 
 /* Value used for dtv entries for which the allocation is delayed.  */
@@ -320,7 +319,7 @@ allocate_dtv (void *result)
 }
 
 
-/* Get size and alignment requirements of the static TLS block.  */
+/* 获取静态TLS块的大小和对齐要求。  */
 void
 internal_function
 _dl_get_tls_static_info (size_t *sizep, size_t *alignp)
