@@ -433,13 +433,12 @@ extern int __lll_mutex_unlock_wake (int *__futex)
   (futex != 0)
 
 
-/* We have a separate internal lock implementation which is not tied
-   to binary compatibility.  */
+/* 我们有一个独立的内部锁实现，它与二进制兼容性无关。 */
 
-/* Type for lock object.  */
+/* 锁定对象的类型。  */
 typedef int lll_lock_t;
 
-/* Initializers for lock.  */
+/* 锁的初始化器  */
 #define LLL_LOCK_INITIALIZER		(0)
 #define LLL_LOCK_INITIALIZER_LOCKED	(1)
 

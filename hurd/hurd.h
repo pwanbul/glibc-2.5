@@ -85,8 +85,7 @@ extern unsigned int _hurd_nports;
 extern mode_t _hurd_umask;
 extern sigset_t _hurdsig_traced;
 
-/* Shorthand macro for internal library code referencing _hurd_ports (see
-   <hurd/port.h>).  */
+/*引用 _hurd_ports 的内部库代码的简写宏（参见 <hurd/port.h>）。  */
 
 #define	__USEPORT(which, expr) \
   HURD_PORT_USE (&_hurd_ports[INIT_PORT_##which], (expr))

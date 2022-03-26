@@ -22,6 +22,7 @@
 #include <atomic.h>
 
 
+// 分离线程
 int
 pthread_detach (th)
      pthread_t th;

@@ -26,6 +26,7 @@ int
 pthread_key_delete (key)
      pthread_key_t key;
 {
+	// 注意：该函数没有调用析构函数
   int result = EINVAL;
 
   if (__builtin_expect (key < PTHREAD_KEYS_MAX, 1))
@@ -35,7 +36,7 @@ pthread_key_delete (key)
       if (__builtin_expect (! KEY_UNUSED (seq), 1)
 	  && ! atomic_compare_and_exchange_bool_acq (&__pthread_keys[key].seq,
 						     seq + 1, seq))
-	/* We deleted a valid key.  */
+	/* 我们删除了一个有效的密钥。  */
 	result = 0;
     }
 

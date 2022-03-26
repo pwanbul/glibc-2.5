@@ -33,40 +33,38 @@ __pthread_setspecific (key, value)
   struct pthread_key_data *level2;
   unsigned int seq;
 
-  self = THREAD_SELF;
+  self = THREAD_SELF;		// 获取当前线程
 
-  /* Special case access to the first 2nd-level block.  This is the
-     usual case.  */
+  /*访问第一个2级块的特殊情况。这是通常的情况。 */
   if (__builtin_expect (key < PTHREAD_KEY_2NDLEVEL_SIZE, 1))
     {
-      /* Verify the key is sane.  */
+      /* 验证key是否正常。  */
       if (KEY_UNUSED ((seq = __pthread_keys[key].seq)))
-	/* Not valid.  */
-	return EINVAL;
+		/* 无效。  */
+		return EINVAL;
 
       level2 = &self->specific_1stblock[key];
 
-      /* Remember that we stored at least one set of data.  */
+      /* 请记住，我们至少存储了一组数据。 */
       if (value != NULL)
-	THREAD_SETMEM (self, specific_used, true);
+		THREAD_SETMEM (self, specific_used, true);
     }
   else
     {
       if (key >= PTHREAD_KEYS_MAX
 	  || KEY_UNUSED ((seq = __pthread_keys[key].seq)))
-	/* Not valid.  */
-	return EINVAL;
+		/* 无效。 */
+		return EINVAL;
 
-      idx1st = key / PTHREAD_KEY_2NDLEVEL_SIZE;
-      idx2nd = key % PTHREAD_KEY_2NDLEVEL_SIZE;
+      idx1st = key / PTHREAD_KEY_2NDLEVEL_SIZE;		// 1级数组的索引
+      idx2nd = key % PTHREAD_KEY_2NDLEVEL_SIZE;		// 2级数组的索引
 
-      /* This is the second level array.  Allocate it if necessary.  */
+      /* 这是第二级数组。必要时分配它。 */
       level2 = THREAD_GETMEM_NC (self, specific, idx1st);
       if (level2 == NULL)
 	{
 	  if (value == NULL)
-	    /* We don't have to do anything.  The value would in any case
-	       be NULL.  We can save the memory allocation.  */
+	    /* 我们不必做任何事情。在任何情况下，该值都将为NULL。我们可以节省内存分配。 */
 	    return 0;
 
 	  level2
@@ -75,18 +73,17 @@ __pthread_setspecific (key, value)
 	  if (level2 == NULL)
 	    return ENOMEM;
 
-	  THREAD_SETMEM_NC (self, specific, idx1st, level2);
+	  THREAD_SETMEM_NC (self, specific, idx1st, level2);		// 将2级数组和1级数组关联起来
 	}
 
-      /* Pointer to the right array element.  */
+      /* 指向右数组元素的指针。 */
       level2 = &level2[idx2nd];
 
-      /* Remember that we stored at least one set of data.  */
+      /* 请记住，我们至少存储了一组数据。 */
       THREAD_SETMEM (self, specific_used, true);
     }
 
-  /* Store the data and the sequence number so that we can recognize
-     stale data.  */
+  /* 存储数据和序列号，以便我们可以识别过时的数据。  */
   level2->seq = seq;
   level2->data = (void *) value;
 

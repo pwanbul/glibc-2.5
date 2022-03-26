@@ -29,9 +29,11 @@ _exit (status)
 {
   while (1)
     {
+	  // 优先使用exit_group
 #ifdef __NR_exit_group
       INLINE_SYSCALL (exit_group, 1, status);
 #endif
+	  // 没有exit_group再使用exit
       INLINE_SYSCALL (exit, 1, status);
 
 #ifdef ABORT_INSTRUCTION

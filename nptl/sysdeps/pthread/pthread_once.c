@@ -21,34 +21,29 @@
 #include <lowlevellock.h>
 
 
-
 static lll_lock_t once_lock = LLL_LOCK_INITIALIZER;
 
 
 int
-__pthread_once (once_control, init_routine)
-     pthread_once_t *once_control;
-     void (*init_routine) (void);
+__pthread_once(once_control, init_routine)
+		pthread_once_t *once_control;
+		void (*init_routine)(void);
 {
-  /* XXX Depending on whether the LOCK_IN_ONCE_T is defined use a
-     global lock variable or one which is part of the pthread_once_t
-     object.  */
-  if (*once_control == PTHREAD_ONCE_INIT)
-    {
-      lll_lock (once_lock);
+	/* 根据是否定义了LOCK_IN_ONCE_T使用全局锁变量
+	 * 或作为pthread_once_t对象一部分的变量。 */
+	if (*once_control == PTHREAD_ONCE_INIT) {
+		lll_lock(once_lock);
 
-      /* XXX This implementation is not complete.  It doesn't take
-	 cancelation and fork into account.  */
-      if (*once_control == PTHREAD_ONCE_INIT)
-	{
-	  init_routine ();
+		/* 此实现不完整。它不考虑cancelation和fork。 */
+		if (*once_control == PTHREAD_ONCE_INIT) {
+			init_routine();
 
-	  *once_control = !PTHREAD_ONCE_INIT;
+			*once_control = !PTHREAD_ONCE_INIT;
+		}
+
+		lll_unlock(once_lock);
 	}
 
-      lll_unlock (once_lock);
-    }
-
-  return 0;
+	return 0;
 }
 strong_alias (__pthread_once, pthread_once)

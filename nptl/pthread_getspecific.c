@@ -27,30 +27,27 @@ __pthread_getspecific (key)
 {
   struct pthread_key_data *data;
 
-  /* Special case access to the first 2nd-level block.  This is the
-     usual case.  */
+  /* 访问第一个2级块的特殊情况。这是通常的情况。  */
   if (__builtin_expect (key < PTHREAD_KEY_2NDLEVEL_SIZE, 1))
     data = &THREAD_SELF->specific_1stblock[key];
   else
     {
-      /* Verify the key is sane.  */
+      /* 验证key是否正常。  */
       if (key >= PTHREAD_KEYS_MAX)
-	/* Not valid.  */
-	return NULL;
+		/* 无效。  */
+		return NULL;
 
       unsigned int idx1st = key / PTHREAD_KEY_2NDLEVEL_SIZE;
       unsigned int idx2nd = key % PTHREAD_KEY_2NDLEVEL_SIZE;
 
-      /* If the sequence number doesn't match or the key cannot be defined
-	 for this thread since the second level array is not allocated
-	 return NULL, too.  */
+      /* 如果序列号不匹配或无法为该线程定义键，因为未分配第二级数组，则也返回NULL。 */
       struct pthread_key_data *level2 = THREAD_GETMEM_NC (THREAD_SELF,
 							  specific, idx1st);
       if (level2 == NULL)
-	/* Not allocated, therefore no data.  */
-	return NULL;
+		/* 未分配，因此没有数据。  */
+		return NULL;
 
-      /* There is data.  */
+      /* 有数据。 */
       data = &level2[idx2nd];
     }
 

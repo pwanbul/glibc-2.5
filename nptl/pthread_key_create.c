@@ -27,23 +27,25 @@ __pthread_key_create (key, destr)
      pthread_key_t *key;
      void (*destr) (void *);
 {
-  /* Find a slot in __pthread_kyes which is unused.  */
+  /* 在__pthread_kyes中找到一个未使用的插槽。
+   * PTHREAD_KEYS_MAX为1024
+   * */
   for (size_t cnt = 0; cnt < PTHREAD_KEYS_MAX; ++cnt)
     {
       uintptr_t seq = __pthread_keys[cnt].seq;
 
       if (KEY_UNUSED (seq) && KEY_USABLE (seq)
-	  /* We found an unused slot.  Try to allocate it.  */
+	  /* 我们找到了一个未使用的插槽。尝试分配它。 CAS语义 */
 	  && ! atomic_compare_and_exchange_bool_acq (&__pthread_keys[cnt].seq,
 						     seq + 1, seq))
 	{
-	  /* Remember the destructor.  */
+	  /* 记住析构函数.  */
 	  __pthread_keys[cnt].destr = destr;
 
-	  /* Return the key to the caller.  */
+	  /* 将密钥返回给调用者，数组的下标 */
 	  *key = cnt;
 
-	  /* The call succeeded.  */
+	  /* 通话成功。  */
 	  return 0;
 	}
     }

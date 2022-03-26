@@ -201,7 +201,7 @@ enum
 #define PTHREAD_CANCELED ((void *) -1)
 
 
-/* Single execution handling.  */
+/* 单次执行处理。  */
 #define PTHREAD_ONCE_INIT 0
 
 

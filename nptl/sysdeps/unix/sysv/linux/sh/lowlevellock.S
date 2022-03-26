@@ -48,7 +48,7 @@ __lll_mutex_lock_wait:
 
 1:
 	mov	r8, r4
-	mov	#SYS_futex, r3
+	mov	#SYS_futex, r3			// futex
 	extu.b	r3, r3
 	trapa	#0x14
 	SYSCALL_INST_PAD

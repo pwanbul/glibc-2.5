@@ -37,7 +37,10 @@ int __is_smp attribute_hidden;
 int __pthread_multiple_threads attribute_hidden;
 #endif
 
-/* Table of the key information.  */
+/* 关键信息表
+ * PTHREAD_KEYS_MAX为1024
+ * 全局数组
+ * */
 struct pthread_key_struct __pthread_keys[PTHREAD_KEYS_MAX]
   __attribute__ ((nocommon));
 hidden_data_def (__pthread_keys)

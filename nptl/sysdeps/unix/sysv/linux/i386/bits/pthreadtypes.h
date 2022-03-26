@@ -49,8 +49,9 @@ typedef struct __pthread_internal_slist
 } __pthread_slist_t;
 
 
-/* Data structures for mutex handling.  The structure of the attribute
-   type is not exposed on purpose.  */
+/* 用于互斥体处理的数据结构。
+ * 属性类型的结构不是故意暴露的。
+ * */
 typedef union
 {
   struct __pthread_mutex_s
@@ -105,11 +106,11 @@ typedef union
 } pthread_condattr_t;
 
 
-/* Keys for thread-specific data */
+/* 线程特定数据的键 */
 typedef unsigned int pthread_key_t;
 
 
-/* Once-only execution */
+/* 一次性执行 */
 typedef int pthread_once_t;
 
 

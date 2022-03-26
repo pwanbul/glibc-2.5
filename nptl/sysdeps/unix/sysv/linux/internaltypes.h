@@ -108,28 +108,25 @@ struct pthread_barrierattr
 };
 
 
-/* Thread-local data handling.  */
+/* 线程本地数据处理。 */
 struct pthread_key_struct
 {
-  /* Sequence numbers.  Even numbers indicated vacant entries.  Note
-     that zero is even.  We use uintptr_t to not require padding on
-     32- and 64-bit machines.  On 64-bit machines it helps to avoid
-     wrapping, too.  */
+  /* 序号。偶数表示空置条目。请注意，零是偶数。
+   * 我们使用uintptr_t在32位和64位机器上不需要填充。
+   * 在64位机器上，它也有助于避免换行。 */
   uintptr_t seq;
 
-  /* Destructor for the data.  */
+  /* 数据的析构函数。  */
   void (*destr) (void *);
 };
 
-/* Check whether an entry is unused.  */
+/* 检查key是否未使用。 */
 #define KEY_UNUSED(p) (((p) & 1) == 0)
-/* Check whether a key is usable.  We cannot reuse an allocated key if
-   the sequence counter would overflow after the next destroy call.
-   This would mean that we potentially free memory for a key with the
-   same sequence.  This is *very* unlikely to happen, A program would
-   have to create and destroy a key 2^31 times (on 32-bit platforms,
-   on 64-bit platforms that would be 2^63).  If it should happen we
-   simply don't use this specific key anymore.  */
+/* 检查key是否可用。
+ * 如果序列计数器在下一次销毁调用后溢出，我们就不能重用分配的键。
+ * 这意味着我们可能会为具有相同序列的键释放内存。
+ * 这不太可能发生，程序必须创建和销毁密钥2^31次（在32位平台上，在64位平台上为2^63）。
+ * 如果发生这种情况，我们就不再使用这个特定的key了。  */
 #define KEY_USABLE(p) (((uintptr_t) (p)) < ((uintptr_t) ((p) + 2)))
 
 

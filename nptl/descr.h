@@ -43,12 +43,11 @@
 #endif
 
 
-/* We keep thread specific data in a special data structure, a two-level
-   array.  The top-level array contains pointers to dynamically allocated
-   arrays of a certain number of data pointers.  So we can implement a
-   sparse array.  Each dynamic second-level array has
-        PTHREAD_KEY_2NDLEVEL_SIZE
-   entries.  This value shouldn't be too large.  */
+/* 我们将线程特定的数据保存在一个特殊的数据结构中，一个两级数组。
+ * 顶级数组包含指向动态分配的一定数量数据指针的数组的指针。
+ * 所以我们可以实现一个稀疏数组。每个动态二级数组都有PTHREAD_KEY_2NDLEVEL_SIZE条目。
+ * 这个值不应该太大。
+ * */
 #define PTHREAD_KEY_2NDLEVEL_SIZE       32
 
 /* We need to address PTHREAD_KEYS_MAX key with PTHREAD_KEY_2NDLEVEL_SIZE
@@ -119,13 +118,13 @@ struct priority_protection_data
 };
 
 
-/* Thread descriptor data structure.  */
+/* 线程描述符数据结构。 */
 struct pthread
 {
   union
   {
 #if !TLS_DTV_AT_TP
-    /* This overlaps the TCB as used for TLS without threads (see tls.h).  */
+    /* 这与用于不带线程的TLS的TCB重叠（参见tls.h）。  */
     tcbhead_t header;
 #else
     struct
@@ -268,23 +267,21 @@ struct pthread
 	       | EXITING_BITMASK | CANCEL_RESTMASK | TERMINATED_BITMASK))     \
    == (CANCELTYPE_BITMASK | CANCELED_BITMASK))
 
-  /* We allocate one block of references here.  This should be enough
-     to avoid allocating any memory dynamically for most applications.  */
+  /* 我们在这里分配一个引用块。这应该足以避免为大多数应用程序动态分配任何内存。 */
   struct pthread_key_data
   {
-    /* Sequence number.  We use uintptr_t to not require padding on
-       32- and 64-bit machines.  On 64-bit machines it helps to avoid
-       wrapping, too.  */
+    /* 序列号。我们使用uintptr_t在32位和64位机器上不需要填充。
+     * 在64位机器上，它也有助于避免换行。 */
     uintptr_t seq;
 
-    /* Data pointer.  */
+    /* 数据指针。  */
     void *data;
-  } specific_1stblock[PTHREAD_KEY_2NDLEVEL_SIZE];
+  } specific_1stblock[PTHREAD_KEY_2NDLEVEL_SIZE];		// 32
 
-  /* Two-level array for the thread-specific data.  */
-  struct pthread_key_data *specific[PTHREAD_KEY_1STLEVEL_SIZE];
+  /* 线程特定数据的两级数组。  */
+  struct pthread_key_data *specific[PTHREAD_KEY_1STLEVEL_SIZE];			// 32
 
-  /* Flag which is set when specific data is set.  */
+  /* 设置特定数据时设置的标志，当存在tsd时，改标记为True */
   bool specific_used;
 
   /* True if events must be reported.  */

@@ -190,8 +190,7 @@ __nptl_deallocate_tsd (void)
 }
 
 
-/* Deallocate a thread's stack after optionally making sure the thread
-   descriptor is still valid.  */
+/* 在可选地确保线程描述符仍然有效之后，释放线程的堆栈。  */
 void
 internal_function
 __free_tcb (struct pthread *pd)
