@@ -60,30 +60,23 @@
 	.globl _start
 	.type _start,@function
 _start:
-	/* Clear the frame pointer.  The ABI suggests this be done, to mark
-	   the outermost frame obviously.  */
+	/* 清除帧指针。ABI建议这样做，以明显地标记最外层的框架。*/
 	xorl %ebp, %ebp
 
-	/* Extract the arguments as encoded on the stack and set up
-	   the arguments for `main': argc, argv.  envp will be determined
-	   later in __libc_start_main.  */
-	popl %esi		/* Pop the argument count.  */
-	movl %esp, %ecx		/* argv starts just at the current stack top.*/
+	/* 提取堆栈上编码的参数，并为“main”设置参数：argc、argv。 envp 稍后将在 __libc_start_main 中确定。 */
+	popl %esi		/* 弹出参数计数。*/
+	movl %esp, %ecx		/* argv从当前栈顶开始。*/
 
-	/* Before pushing the arguments align the stack to a 16-byte
-	(SSE needs 16-byte alignment) boundary to avoid penalties from
-	misaligned accesses.  Thanks to Edward Seidl <seidl@janed.com>
-	for pointing this out.  */
+	/* 在推送参数之前，将堆栈对齐到 16 字节（SSE 需要 16 字节对齐）边界以避免未对齐访问的惩罚。
+	 * 感谢 Edward Seidl <seidl@janed.com> 指出这一点。
+	 * */
 	andl $0xfffffff0, %esp
-	pushl %eax		/* Push garbage because we allocate
-				   28 more bytes.  */
+	pushl %eax		/* 推送垃圾，因为我们分配了 28 个字节。  */
 
-	/* Provide the highest stack address to the user code (for stacks
-	   which grow downwards).  */
+	/* 向用户代码提供最高堆栈地址（对于向下增长的堆栈）。 */
 	pushl %esp
 
-	pushl %edx		/* Push address of the shared library
-				   termination function.  */
+	pushl %edx		/* 共享库终止函数的推送地址。 */
 
 #ifdef SHARED
 	/* Load PIC register.  */

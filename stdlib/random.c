@@ -277,16 +277,12 @@ __setstate (arg_state)
 
 weak_alias (__setstate, setstate)
 
-/* If we are using the trivial TYPE_0 R.N.G., just do the old linear
-   congruential bit.  Otherwise, we do our fancy trinomial stuff, which is the
-   same in all the other cases due to all the global variables that have been
-   set up.  The basic operation is to add the number at the rear pointer into
-   the one at the front pointer.  Then both pointers are advanced to the next
-   location cyclically in the table.  The value returned is the sum generated,
-   reduced to 31 bits by throwing away the "least random" low bit.
-   Note: The code takes advantage of the fact that both the front and
-   rear pointers can't wrap on the same call by not testing the rear
-   pointer if the front one has wrapped.  Returns a 31-bit random number.  */
+/* 如果我们使用普通的 TYPE_0 R.N.G.，只需执行旧的线性同余位即可。
+ * 否则，我们会做我们花哨的三项式的事情，由于已经设置了所有全局变量，这在所有其他情况下都是相同的。
+ * 基本操作是将后指针处的数字与前指针处的数字相加。
+ * 然后两个指针循环前进到表中的下一个位置。返回的值是生成的总和，通过丢弃“最不随机”的低位减少到 31 位。
+   注意：代码利用了前指针和后指针不能在同一个调用中换行的事实，如果前指针已经换行，则不测试后指针。
+   返回一个 31 位随机数。  */
 
 long int
 __random ()

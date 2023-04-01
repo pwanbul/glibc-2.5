@@ -32,20 +32,19 @@
 
 #ifndef NEED_SEPARATE_REGISTER_STACK
 
-/* Most architectures have exactly one stack pointer.  Some have more.  */
+/* 大多数架构只有一个堆栈指针。有些有更多。  */
 # define STACK_VARIABLES void *stackaddr = NULL
 
-/* How to pass the values to the 'create_thread' function.  */
+/* 如何将值传递给“create_thread”函数。  */
 # define STACK_VARIABLES_ARGS stackaddr
 
-/* How to declare function which gets there parameters.  */
+/* 如何声明获取参数的函数。  */
 # define STACK_VARIABLES_PARMS void *stackaddr
 
-/* How to declare allocate_stack.  */
+/* 如何声明 allocate_stack。  */
 # define ALLOCATE_STACK_PARMS void **stack
 
-/* This is how the function is called.  We do it this way to allow
-   other variants of the function to have more parameters.  */
+/* 这就是调用函数的方式。我们这样做是为了让函数的其他变体有更多的参数。  */
 # define ALLOCATE_STACK(attr, pd) allocate_stack (attr, pd, &stackaddr)
 
 #else
@@ -63,8 +62,7 @@
 /* How to declare allocate_stack.  */
 # define ALLOCATE_STACK_PARMS void **stack, size_t *stacksize
 
-/* This is how the function is called.  We do it this way to allow
-   other variants of the function to have more parameters.  */
+/* 这就是调用函数的方式。我们这样做是为了让函数的其他变体有更多的参数。  */
 # define ALLOCATE_STACK(attr, pd) \
   allocate_stack (attr, pd, &stackaddr, &stacksize)
 
@@ -299,9 +297,7 @@ change_stack_perm (struct pthread *pd
 }
 
 
-static int
-allocate_stack (const struct pthread_attr *attr, struct pthread **pdp,
-		ALLOCATE_STACK_PARMS)
+static int allocate_stack (const struct pthread_attr *attr, struct pthread **pdp, ALLOCATE_STACK_PARMS)
 {
   struct pthread *pd;
   size_t size;
@@ -339,8 +335,7 @@ allocate_stack (const struct pthread_attr *attr, struct pthread **pdp,
       /* 用户提供了一些内存。让我们希望它与大小匹配......如果用户提供堆栈，
        * 我们不会分配保护页面。如果需要，用户有责任这样做。  */
 #if TLS_TCB_AT_TP
-      pd = (struct pthread *) ((uintptr_t) attr->stackaddr
-			       - TLS_TCB_SIZE - adj);
+      pd = (struct pthread *) ((uintptr_t) attr->stackaddr - TLS_TCB_SIZE - adj);
 #elif TLS_DTV_AT_TP
       pd = (struct pthread *) (((uintptr_t) attr->stackaddr
 			        - __static_tls_size - adj)

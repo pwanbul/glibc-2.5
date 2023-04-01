@@ -406,11 +406,10 @@ start_thread (void *arg)
 }
 
 
-/* Default thread attributes for the case when the user does not
-   provide any.  */
+/* 用户未提供任何情况下的默认线程属性。  */
 static const struct pthread_attr default_attr =
   {
-    /* Just some value > 0 which gets rounded to the nearest page size.  */
+    /* 只是一些 > 0 的值四舍五入到最接近的页面大小。  */
     .guardsize = 1,
   };
 
@@ -552,9 +551,7 @@ __pthread_create_2_0 (newthread, attr, start_routine, arg)
      void *(*start_routine) (void *);
      void *arg;
 {
-  /* The ATTR attribute is not really of type `pthread_attr_t *'.  It has
-     the old size and access to the new members might crash the program.
-     We convert the struct now.  */
+  /* ATTR 属性实际上不是“pthread_attr_t”类型。它具有旧大小并且访问新成员可能会使程序崩溃。我们现在转换结构。  */
   struct pthread_attr new_attr;
 
   if (attr != NULL)
@@ -562,19 +559,18 @@ __pthread_create_2_0 (newthread, attr, start_routine, arg)
       struct pthread_attr *iattr = (struct pthread_attr *) attr;
       size_t ps = __getpagesize ();
 
-      /* Copy values from the user-provided attributes.  */
+      /* 从用户提供的属性中复制值。  */
       new_attr.schedparam = iattr->schedparam;
       new_attr.schedpolicy = iattr->schedpolicy;
       new_attr.flags = iattr->flags;
 
-      /* Fill in default values for the fields not present in the old
-	 implementation.  */
+      /* 为旧实现中不存在的字段填写默认值。  */
       new_attr.guardsize = ps;
       new_attr.stackaddr = NULL;
       new_attr.stacksize = 0;
       new_attr.cpuset = NULL;
 
-      /* We will pass this value on to the real implementation.  */
+      /* 我们会将这个值传递给真正的实现。  */
       attr = (pthread_attr_t *) &new_attr;
     }
 
